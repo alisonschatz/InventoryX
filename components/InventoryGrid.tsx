@@ -49,16 +49,18 @@ export default function InventoryGrid({
   };
 
   return (
-    <div className="bg-theme-panel rounded-xl shadow-theme-light p-6 border border-theme-soft">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="bg-theme-panel rounded-xl shadow-theme-light p-3 md:p-6 border border-theme-soft">
+      
+      {/* Header do Inventário */}
+      <div className="mb-4 md:mb-6 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-theme-primary">Inventário de Ferramentas</h2>
-          <p className="text-theme-secondary text-sm mt-1">
+          <h2 className="text-lg md:text-2xl font-bold text-theme-primary">Inventário de Ferramentas</h2>
+          <p className="text-theme-secondary text-xs md:text-sm mt-1">
             Organize suas ferramentas arrastando e soltando
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-theme-secondary">
+          <div className="text-xs md:text-sm text-theme-secondary">
             {inventorySlots.filter(slot => slot !== null).length} / {inventorySlots.length}
           </div>
           <div className="text-xs text-theme-secondary">
@@ -67,13 +69,13 @@ export default function InventoryGrid({
         </div>
       </div>
 
-      {/* Grid de 8 colunas para melhor uso do espaço */}
-      <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-3">
+      {/* Grid Responsivo - Mobile otimizado */}
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2 md:gap-3">
         {inventorySlots.map((item, index) => (
           <div
             key={index}
             className={`
-              relative aspect-square border-2 rounded-xl p-3 cursor-pointer transition-all duration-200 inventory-slot group
+              relative aspect-square border-2 rounded-lg md:rounded-xl p-2 md:p-3 cursor-pointer transition-all duration-200 inventory-slot group
               ${item 
                 ? `${getRarityColor(item.rarity)} ${getRarityGlow(item.rarity)} shadow-md hover:shadow-lg hover:scale-105 hover:-translate-y-1` 
                 : 'border-dashed border-theme-soft bg-theme-hover hover:bg-theme-soft hover:border-purple-300 dark:hover:border-purple-600'
@@ -93,15 +95,22 @@ export default function InventoryGrid({
           >
             {item ? (
               <div className="flex flex-col items-center justify-center h-full">
-                <div className="text-2xl lg:text-3xl mb-1 pointer-events-none group-hover:scale-110 transition-transform">
+                <div className="text-lg md:text-2xl lg:text-3xl mb-1 pointer-events-none group-hover:scale-110 transition-transform">
                   {item.icon}
                 </div>
-                <div className="text-xs lg:text-sm font-medium text-center text-theme-primary leading-tight pointer-events-none">
-                  {item.name.split(' ')[0]}
+                
+                {/* Nome do item - responsivo */}
+                <div className="text-xs md:text-sm font-medium text-center text-theme-primary leading-tight pointer-events-none px-1">
+                  <span className="block md:hidden">
+                    {item.name.split(' ')[0].substring(0, 6)}
+                  </span>
+                  <span className="hidden md:block">
+                    {item.name.split(' ')[0]}
+                  </span>
                 </div>
                 
                 {/* Indicador de raridade */}
-                <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
+                <div className={`absolute -top-1 -right-1 w-2 h-2 md:w-3 md:h-3 rounded-full ${
                   item.rarity === 'legendary' ? 'bg-yellow-400' :
                   item.rarity === 'epic' ? 'bg-purple-400' :
                   item.rarity === 'rare' ? 'bg-cyan-400' :
@@ -112,16 +121,16 @@ export default function InventoryGrid({
               <div className="flex items-center justify-center h-full">
                 <div className="text-theme-secondary text-xs pointer-events-none text-center leading-tight">
                   {dragOverSlot === index ? (
-                    <span className="font-medium text-cyan-600 dark:text-cyan-400">Solte aqui</span>
+                    <span className="font-medium text-cyan-600 dark:text-cyan-400 text-xs">Solte</span>
                   ) : (
-                    <span>Vazio</span>
+                    <span className="hidden md:block">Vazio</span>
                   )}
                 </div>
               </div>
             )}
             
             {/* Número do slot */}
-            <div className="absolute -top-2 -left-2 w-5 h-5 bg-theme-secondary text-white text-xs rounded-full flex items-center justify-center font-medium shadow-sm">
+            <div className="absolute -top-1 -left-1 md:-top-2 md:-left-2 w-4 h-4 md:w-5 md:h-5 bg-theme-secondary text-white text-xs rounded-full flex items-center justify-center font-medium shadow-sm">
               {index + 1}
             </div>
           </div>
@@ -129,22 +138,22 @@ export default function InventoryGrid({
       </div>
 
       {/* Legenda de Raridades */}
-      <div className="mt-6 pt-4 border-t border-theme-soft">
-        <div className="flex items-center justify-center gap-6 text-xs">
+      <div className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-theme-soft">
+        <div className="flex items-center justify-center gap-3 md:gap-6 text-xs">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-gray-400"></div>
             <span className="text-theme-secondary">Comum</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-cyan-400"></div>
+            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-cyan-400"></div>
             <span className="text-theme-secondary">Raro</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-purple-400"></div>
             <span className="text-theme-secondary">Épico</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+            <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-400"></div>
             <span className="text-theme-secondary">Lendário</span>
           </div>
         </div>

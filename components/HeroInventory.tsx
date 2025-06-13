@@ -114,8 +114,43 @@ const HeroInventory: React.FC = () => {
    */
   const renderXPBar = () => (
     <div className="mb-6">
-      <div className="max-w-5xl mx-auto bg-theme-panel rounded-xl border border-theme-soft shadow-theme-light p-4">
-        <div className="flex items-center gap-4">
+      <div className="max-w-5xl mx-auto bg-theme-panel rounded-xl border border-theme-soft shadow-theme-light p-3 md:p-4">
+        
+        {/* Layout Mobile (Vertical) */}
+        <div className="md:hidden space-y-3">
+          
+          {/* Header Mobile */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-lg">
+                <Star className="w-4 h-4 text-yellow-600" />
+              </div>
+              <div className="text-sm font-bold text-theme-primary">
+                Nível {userStats.level}
+              </div>
+            </div>
+            <div className="text-sm font-bold text-theme-primary">
+              {Math.round(xpProgress)}%
+            </div>
+          </div>
+
+          {/* Barra de Progresso Mobile */}
+          <div>
+            <div className="flex justify-between text-xs text-theme-secondary mb-1">
+              <span>{userStats.xp.toLocaleString()} XP</span>
+              <span>{userStats.nextLevelXp.toLocaleString()} XP</span>
+            </div>
+            <div className="w-full bg-theme-hover rounded-full h-2 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-purple-500 via-purple-600 to-cyan-500 h-full rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.min(xpProgress, 100)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Layout Desktop (Horizontal) */}
+        <div className="hidden md:flex items-center gap-4">
           
           {/* Ícone de nível */}
           <div className="flex items-center gap-2">
