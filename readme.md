@@ -1,6 +1,10 @@
 # InventoryX - Next.js
 
-Uma interface de inventário gamificada para organizar suas ferramentas de produtividade, construída com Next.js 14, React e Tailwind CSS.
+<div style="display: flex; align-items: center; gap: 16px;">
+  <img src="public/img/logo.png" alt="Imagem Ilustrativa" width="100">
+  <p>Uma interface de inventário gamificada para organizar suas ferramentas de produtividade, construída com <strong>Next.js 14</strong>, <strong>React</strong> e <strong>Tailwind CSS</strong>.</p>
+</div>
+
 
 ## ✨ Características
 
