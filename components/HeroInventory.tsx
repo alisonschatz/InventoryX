@@ -13,6 +13,7 @@ import InventoryGrid from './InventoryGrid'
 import InventoryList from './InventoryList'
 import ItemDetailModal from './ItemDetailModal'
 import ItemManagerModal from './ItemManagerModal'
+import GuestConversionBanner from './GuestConversionBanner'
 
 export default function HeroInventory() {
   // ===================== ESTADO DA APLICAÇÃO =====================
@@ -96,6 +97,9 @@ export default function HeroInventory() {
       {/* ====================== CONTEÚDO PRINCIPAL ====================== */}
       <main className="flex-1 w-full bg-theme-primary">
         <div className="max-w-7xl mx-auto px-4 py-6">
+          
+          {/* ================= BANNER DE CONVERSÃO (CONVIDADO) ================= */}
+          <GuestConversionBanner />
           
           {/* ================= DASHBOARD DE MÉTRICAS ================= */}
           <section className="mb-8">

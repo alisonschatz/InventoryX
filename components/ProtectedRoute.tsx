@@ -9,24 +9,36 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth()
+  const { user, loading, isGuestMode } = useAuth()
 
-  // DEBUG: Log para verificar o que está acontecendo
-  console.log('🛡️ ProtectedRoute - User:', user ? 'LOGADO' : 'NÃO LOGADO', 'Loading:', loading)
+  // DEBUG: Log detalhado para verificar estados
+  console.log('🛡️ ProtectedRoute - Estados:', {
+    hasUser: !!user,
+    isGuest: isGuestMode,
+    loading,
+    userType: user?.isGuest ? 'CONVIDADO' : user ? 'REAL' : 'NENHUM'
+  })
 
-  // Mostra loading enquanto verifica autenticação
+  // Ainda carregando - mostrar loading
   if (loading) {
-    console.log('⏳ Mostrando LoadingScreen - verificando autenticação')
+    console.log('⏳ ProtectedRoute: Ainda carregando...')
     return <LoadingScreen />
   }
 
-  // Se não autenticado, mostra página de login
-  if (!user) {
-    console.log('🔐 Mostrando LoginPage - usuário não autenticado')
+  // Verificar se tem usuário (real ou convidado)
+  const hasValidUser = user && (user.isGuest || !isGuestMode)
+  
+  if (!hasValidUser) {
+    console.log('🔐 ProtectedRoute: Sem usuário válido, mostrando LoginPage')
     return <LoginPage />
   }
 
-  // Se autenticado, mostra o conteúdo protegido
-  console.log('✅ Mostrando conteúdo protegido - usuário autenticado:', user.email)
+  // Usuário válido (real ou convidado) - mostrar conteúdo
+  console.log('✅ ProtectedRoute: Usuário autenticado:', {
+    type: isGuestMode ? 'CONVIDADO' : 'REAL',
+    name: user.displayName,
+    email: user.email
+  })
+  
   return <>{children}</>
 }

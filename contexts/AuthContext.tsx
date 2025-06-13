@@ -1,361 +1,291 @@
+// contexts/AuthContext.tsx
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { initializeFirebase, getFirebaseFunctions } from '@/lib/firebase-client'
+import { createContext, useContext, useState, useEffect } from 'react'
+import { 
+  User, 
+  UserProfile, 
+  AuthContextType,
+  GuestService,
+  FirebaseService
+} from './auth'
+import debugService from '../lib/debug'
 
-interface UserProfile {
-  uid: string
-  email: string | null
-  displayName: string | null
-  photoURL: string | null
-  createdAt: string
-  lastLogin: string
-  level: number
-  xp: number
-}
-
-interface User {
-  uid: string
-  email: string | null
-  displayName: string | null
-  photoURL: string | null
-  metadata: {
-    creationTime?: string
-    lastSignInTime?: string
-  }
-}
-
-interface AuthContextType {
-  user: User | null
-  userProfile: UserProfile | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<any>
-  register: (email: string, password: string, name: string) => Promise<any>
-  loginWithGoogle: () => Promise<any>
-  logout: () => Promise<void>
-  resetPassword: (email: string) => Promise<void>
-  updateUserProfile: (data: Partial<UserProfile>) => Promise<void>
-}
+// ========================= CONTEXT =========================
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth deve ser usado dentro de AuthProvider')
   }
   return context
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// ========================= PROVIDER =========================
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  // Estados principais
   const [user, setUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [firebaseReady, setFirebaseReady] = useState(false)
-  const [auth, setAuth] = useState<any>(null)
-  const [db, setDb] = useState<any>(null)
+  const [isGuestMode, setIsGuestMode] = useState(false)
 
-  console.log('🔥 AuthProvider iniciando...')
+  debugService.info('init', 'AuthProvider iniciado')
 
-  // Inicializar Firebase apenas no cliente
+  // ===================== INICIALIZAÇÃO =====================
+
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      console.log('⚠️ Rodando no servidor, aguardando cliente...')
-      return
+    debugService.info('init', 'Executando inicialização')
+    
+    // Timeout de segurança
+    const forceStopLoading = setTimeout(() => {
+      debugService.warning('state', 'TIMEOUT: Forçando parada do loading')
+      setLoading(false)
+    }, 3000)
+    
+    const runInit = async () => {
+      await initializeAuth()
+      clearTimeout(forceStopLoading)
     }
-
-    const setupFirebase = async () => {
-      try {
-        console.log('🔥 Configurando Firebase...')
-        
-        const { auth: authInstance, db: dbInstance } = await initializeFirebase()
-        
-        if (!authInstance || !dbInstance) {
-          throw new Error('Falha ao inicializar Firebase')
-        }
-
-        setAuth(authInstance)
-        setDb(dbInstance)
-        setFirebaseReady(true)
-
-        console.log('✅ Firebase configurado com sucesso')
-
-        // Configurar listener de autenticação
-        const functions = await getFirebaseFunctions()
-        
-        if (functions.onAuthStateChanged) {
-          const unsubscribe = functions.onAuthStateChanged(authInstance, async (firebaseUser: any) => {
-            console.log('🔄 Auth state changed:', firebaseUser ? 'LOGADO' : 'DESLOGADO')
-            
-            if (firebaseUser) {
-              const userData: User = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: firebaseUser.displayName,
-                photoURL: firebaseUser.photoURL,
-                metadata: firebaseUser.metadata
-              }
-              
-              setUser(userData)
-              await fetchUserProfile(firebaseUser.uid, dbInstance, functions)
-            } else {
-              setUser(null)
-              setUserProfile(null)
-            }
-            
-            setLoading(false)
-          })
-
-          return unsubscribe
-        }
-      } catch (error) {
-        console.error('❌ Erro ao configurar Firebase:', error)
-        setLoading(false)
-        setFirebaseReady(false)
-      }
-    }
-
-    setupFirebase()
+    
+    runInit()
+    
+    return () => clearTimeout(forceStopLoading)
   }, [])
 
-  // Criar perfil do usuário
-  const createUserProfile = async (user: User, additionalData: any = {}) => {
-    if (!db || !firebaseReady) {
-      console.error('❌ Firebase não está pronto')
+  // Debug de mudanças de estado (sem loops)
+  useEffect(() => {
+    // Só logar após inicialização
+    if (loading && !user && !isGuestMode) return
+    
+    debugService.stateChange(!!user, isGuestMode, loading, user?.displayName || undefined)
+  }, [user, isGuestMode, loading])
+
+  /**
+   * Inicializar sistema de autenticação
+   */
+  const initializeAuth = async () => {
+    debugService.info('init', 'Iniciando sistema de autenticação')
+
+    // Só no cliente
+    if (typeof window === 'undefined') {
+      debugService.warning('init', 'Servidor detectado - parando loading')
+      setLoading(false)
       return
     }
 
-    try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.doc || !functions.setDoc || !functions.getDoc) {
-        throw new Error('Funções do Firestore não disponíveis')
-      }
+    // 1. Verificar modo convidado primeiro
+    const guestResult = GuestService.checkGuestMode()
+    if (guestResult.isGuest && guestResult.user && guestResult.profile) {
+      debugService.success('guest', 'Convidado encontrado - configurando estados')
+      
+      setUser(guestResult.user)
+      setUserProfile(guestResult.profile)
+      setIsGuestMode(true)
+      setLoading(false)
+      return
+    }
 
-      const userRef = functions.doc(db, 'users', user.uid)
-      const snapshot = await functions.getDoc(userRef)
+    // 2. Inicializar Firebase se não for convidado
+    const firebaseInitialized = await FirebaseService.initialize()
+    if (!firebaseInitialized) {
+      debugService.error('firebase', 'Falha na inicialização - parando loading')
+      setLoading(false)
+      return
+    }
 
-      if (!snapshot.exists()) {
-        const profileData: UserProfile = {
-          uid: user.uid,
-          displayName: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          level: 1,
-          xp: 0,
-          ...additionalData
-        }
+    // 3. Configurar listener do Firebase
+    const unsubscribe = FirebaseService.setupAuthListener(
+      handleFirebaseUserChange,
+      handleLoadUserProfile
+    )
 
-        await functions.setDoc(userRef, profileData)
-        setUserProfile(profileData)
-        console.log('✅ Perfil criado')
-      } else {
-        const existingData = snapshot.data() as UserProfile
-        const updatedData = {
-          ...existingData,
-          lastLogin: new Date().toISOString()
-        }
-        await functions.setDoc(userRef, updatedData, { merge: true })
-        setUserProfile(updatedData)
-        console.log('✅ Perfil atualizado')
-      }
-    } catch (error) {
-      console.error('❌ Erro ao criar perfil:', error)
+    if (!unsubscribe) {
+      debugService.error('firebase', 'Falha no listener - parando loading')
+      setLoading(false)
     }
   }
 
-  // Buscar perfil do usuário
-  const fetchUserProfile = async (uid: string, dbInstance: any, functions: any) => {
-    try {
-      if (!functions.doc || !functions.getDoc) return
+  /**
+   * Handler para mudança de usuário Firebase
+   */
+  const handleFirebaseUserChange = (firebaseUser: User | null) => {
+    debugService.info('firebase', 'Mudança de usuário detectada', {
+      hasUser: !!firebaseUser,
+      isGuest: isGuestMode
+    })
 
-      const userRef = functions.doc(dbInstance, 'users', uid)
-      const snapshot = await functions.getDoc(userRef)
-      
-      if (snapshot.exists()) {
-        setUserProfile(snapshot.data() as UserProfile)
-      }
-    } catch (error) {
-      console.error('❌ Erro ao buscar perfil:', error)
-    }
-  }
-
-  // Registro
-  const register = async (email: string, password: string, name: string) => {
-    if (!auth || !firebaseReady) {
-      throw new Error('Firebase não está pronto')
-    }
-
-    try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.createUserWithEmailAndPassword || !functions.updateProfile) {
-        throw new Error('Funções de autenticação não disponíveis')
-      }
-
-      console.log('📝 Criando conta...')
-      const result = await functions.createUserWithEmailAndPassword(auth, email, password)
-      
-      console.log('✅ Conta criada, atualizando perfil...')
-      await functions.updateProfile(result.user, { displayName: name })
-      
-      const userData: User = {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: name,
-        photoURL: result.user.photoURL,
-        metadata: result.user.metadata
-      }
-
-      await createUserProfile(userData, { displayName: name })
-      
-      return result
-    } catch (error) {
-      console.error('❌ Erro no registro:', error)
-      throw error
-    }
-  }
-
-  // Login
-  const login = async (email: string, password: string) => {
-    if (!auth || !firebaseReady) {
-      throw new Error('Firebase não está pronto')
-    }
-
-    try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.signInWithEmailAndPassword) {
-        throw new Error('Função de login não disponível')
-      }
-
-      console.log('🔐 Fazendo login...')
-      const result = await functions.signInWithEmailAndPassword(auth, email, password)
-      
-      const userData: User = {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName,
-        photoURL: result.user.photoURL,
-        metadata: result.user.metadata
-      }
-
-      await createUserProfile(userData)
-      
-      return result
-    } catch (error) {
-      console.error('❌ Erro no login:', error)
-      throw error
-    }
-  }
-
-  // Login com Google
-  const loginWithGoogle = async () => {
-    if (!auth || !firebaseReady) {
-      throw new Error('Firebase não está pronto')
-    }
-
-    try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.GoogleAuthProvider || !functions.signInWithPopup) {
-        throw new Error('Funções do Google não disponíveis')
-      }
-
-      console.log('🔗 Login com Google...')
-      const provider = new functions.GoogleAuthProvider()
-      provider.setCustomParameters({ prompt: 'select_account' })
-      
-      const result = await functions.signInWithPopup(auth, provider)
-      
-      const userData: User = {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName,
-        photoURL: result.user.photoURL,
-        metadata: result.user.metadata
-      }
-
-      await createUserProfile(userData)
-      
-      return result
-    } catch (error) {
-      console.error('❌ Erro no Google:', error)
-      throw error
-    }
-  }
-
-  // Logout
-  const logout = async () => {
-    if (!auth || !firebaseReady) return
-
-    try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.signOut) return
-
-      await functions.signOut(auth)
+    if (firebaseUser && !isGuestMode) {
+      setUser(firebaseUser)
+      setIsGuestMode(false)
+    } else if (!isGuestMode) {
       setUser(null)
       setUserProfile(null)
-    } catch (error) {
-      console.error('❌ Erro no logout:', error)
-      throw error
     }
+    
+    setLoading(false)
   }
 
-  // Reset de senha
-  const resetPassword = async (email: string) => {
-    if (!auth || !firebaseReady) {
-      throw new Error('Firebase não está pronto')
-    }
-
+  /**
+   * Handler para carregar perfil do usuário
+   */
+  const handleLoadUserProfile = async (user: User) => {
     try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.sendPasswordResetEmail) {
-        throw new Error('Função de reset não disponível')
+      const profile = await FirebaseService.loadUserProfile(user)
+      if (profile) {
+        setUserProfile(profile)
       }
-
-      await functions.sendPasswordResetEmail(auth, email)
     } catch (error) {
-      console.error('❌ Erro no reset:', error)
+      debugService.error('firebase', 'Erro ao carregar perfil', error)
+    }
+  }
+
+  // ===================== MÉTODOS PÚBLICOS =====================
+
+  /**
+   * Login como convidado
+   */
+  const loginAsGuest = () => {
+    debugService.info('guest', 'Iniciando login como convidado')
+    
+    const { user: guestUser, profile: guestProfile } = GuestService.createGuestSession()
+    
+    setUser(guestUser)
+    setUserProfile(guestProfile)
+    setIsGuestMode(true)
+    setLoading(false)
+    
+    debugService.success('guest', 'Login como convidado concluído')
+  }
+
+  /**
+   * Login com email e senha
+   */
+  const login = async (email: string, password: string) => {
+    return await FirebaseService.login(email, password)
+  }
+
+  /**
+   * Registro
+   */
+  const register = async (email: string, password: string, name: string) => {
+    return await FirebaseService.register(email, password, name)
+  }
+
+  /**
+   * Login com Google
+   */
+  const loginWithGoogle = async () => {
+    return await FirebaseService.loginWithGoogle()
+  }
+
+  /**
+   * Reset de senha
+   */
+  const resetPassword = async (email: string) => {
+    return await FirebaseService.resetPassword(email)
+  }
+
+  /**
+   * Atualizar perfil
+   */
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
+    if (isGuestMode) {
+      // Atualizar convidado
+      GuestService.updateGuestData(updates)
+      setUserProfile(prev => prev ? { ...prev, ...updates } : null)
+    } else if (user) {
+      // Atualizar Firebase
+      await FirebaseService.updateProfile(user.uid, updates)
+      setUserProfile(prev => prev ? { ...prev, ...updates } : null)
+    }
+  }
+
+  /**
+   * Logout
+   */
+  const logout = async () => {
+    try {
+      if (isGuestMode) {
+        debugService.info('guest', 'Logout de convidado')
+        GuestService.clearGuestData()
+        setUser(null)
+        setUserProfile(null)
+        setIsGuestMode(false)
+        
+        // Reinicializar Firebase
+        await FirebaseService.initialize()
+      } else {
+        debugService.info('firebase', 'Logout do Firebase')
+        await FirebaseService.logout()
+      }
+    } catch (error) {
+      debugService.error('auth', 'Erro no logout', error)
       throw error
     }
   }
 
-  // Atualizar perfil
-  const updateUserProfile = async (data: Partial<UserProfile>) => {
-    if (!user || !db || !firebaseReady) return
+  /**
+   * Converter convidado para usuário real
+   */
+  const convertGuestToUser = async (email: string, password: string, name: string) => {
+    if (!isGuestMode || !userProfile) {
+      throw new Error('Não está no modo convidado')
+    }
     
     try {
-      const functions = await getFirebaseFunctions()
-      if (!functions.doc || !functions.setDoc) return
-
-      const userRef = functions.doc(db, 'users', user.uid)
-      await functions.setDoc(userRef, data, { merge: true })
+      debugService.info('guest', 'Iniciando conversão para usuário real', {
+        email,
+        currentXP: userProfile.xp,
+        currentLevel: userProfile.level
+      })
       
-      if (userProfile) {
-        setUserProfile({ ...userProfile, ...data })
+      // Obter dados para transferir
+      const conversionData = GuestService.getConversionData()
+      if (!conversionData) {
+        throw new Error('Dados de conversão não encontrados')
       }
+      
+      // Limpar dados do convidado
+      GuestService.clearGuestData()
+      setIsGuestMode(false)
+      
+      // Registrar usuário real
+      await register(email, password, name)
+      
+      // Transferir dados (será feito pelo listener)
+      if (user && FirebaseService.isInitialized()) {
+        await FirebaseService.updateProfile(user.uid, {
+          level: conversionData.level,
+          xp: conversionData.xp
+        })
+      }
+      
+      debugService.success('guest', 'Conversão concluída com sucesso')
     } catch (error) {
-      console.error('❌ Erro ao atualizar perfil:', error)
+      debugService.error('guest', 'Erro na conversão', error)
       throw error
     }
   }
+
+  // ===================== CONTEXT VALUE =====================
 
   const value: AuthContextType = {
     user,
     userProfile,
     loading,
+    isGuestMode,
+    loginAsGuest,
+    logout,
     login,
     register,
     loginWithGoogle,
-    logout,
     resetPassword,
-    updateUserProfile
+    updateUserProfile,
+    convertGuestToUser
   }
-
-  console.log('📊 AuthProvider state:', { 
-    firebaseReady,
-    hasUser: !!user, 
-    loading 
-  })
 
   return (
     <AuthContext.Provider value={value}>
