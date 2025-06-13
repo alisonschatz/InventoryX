@@ -208,7 +208,7 @@ Se você encontrar algum problema ou tiver dúvidas:
 3. Inclua informações do seu ambiente (OS, Node.js, navegador)
 
 
-🔧 Resolver Carregamento Infinito - Next.js
+## 🔧 Resolver Carregamento Infinito - Next.js
 🚨 Passos Imediatos
 1. Limpar Cache e Reinstalar
 bash# Delete as pastas de cache
@@ -216,10 +216,10 @@ rm -rf .next
 rm -rf node_modules
 rm -rf package-lock.json
 
-# Reinstale as dependências
+2. Reinstale as dependências
 npm install
 
-# Rode novamente
+3. Rode novamente
 npm run dev
 
 ---
