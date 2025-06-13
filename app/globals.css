@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* === VARIÁVEIS CSS PARA TEMAS === */
+:root {
+  /* 🔆 Tema Claro (Light) */
+  --bg-primary: #F9FAFC;
+  --bg-panel: #FFFFFF;
+  --text-primary: #1E1E1E;
+  --text-secondary: #5F6C7B;
+  --accent-primary: #6D28D9;
+  --accent-secondary: #00D9FF;
+  --accent-contrast: #FFB400;
+  --border-soft: #E5E7EB;
+  --bg-hover: #E0F7FF;
+  --shadow-light: rgba(109, 40, 217, 0.1);
+  --shadow-medium: rgba(109, 40, 217, 0.2);
+}
+
+[data-theme="dark"] {
+  /* 🌙 Tema Escuro (Dark) */
+  --bg-primary: #0E0E1A;
+  --bg-panel: #1F2233;
+  --text-primary: #E5E7EB;
+  --text-secondary: #9CA3AF;
+  --accent-primary: #8B5CF6;
+  --accent-secondary: #00E0FF;
+  --accent-contrast: #FFC400;
+  --border-soft: #2F2F3D;
+  --bg-hover: #2A2444;
+  --shadow-light: rgba(139, 92, 246, 0.1);
+  --shadow-medium: rgba(139, 92, 246, 0.2);
+}
+
+/* === ESTILOS BASE === */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* === CLASSES UTILITÁRIAS PERSONALIZADAS === */
+@layer utilities {
+  /* Backgrounds */
+  .bg-theme-primary {
+    background-color: var(--bg-primary);
+  }
+  
+  .bg-theme-panel {
+    background-color: var(--bg-panel);
+  }
+  
+  .bg-theme-hover {
+    background-color: var(--bg-hover);
+  }
+  
+  /* Textos */
+  .text-theme-primary {
+    color: var(--text-primary);
+  }
+  
+  .text-theme-secondary {
+    color: var(--text-secondary);
+  }
+  
+  /* Acentos */
+  .text-accent-primary {
+    color: var(--accent-primary);
+  }
+  
+  .text-accent-secondary {
+    color: var(--accent-secondary);
+  }
+  
+  .text-accent-contrast {
+    color: var(--accent-contrast);
+  }
+  
+  .bg-accent-primary {
+    background-color: var(--accent-primary);
+  }
+  
+  .bg-accent-secondary {
+    background-color: var(--accent-secondary);
+  }
+  
+  /* Bordas */
+  .border-theme-soft {
+    border-color: var(--border-soft);
+  }
+  
+  /* Gradientes */
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  }
+  
+  .bg-gradient-contrast {
+    background: linear-gradient(135deg, var(--accent-contrast), var(--accent-primary));
+  }
+  
+  /* Sombras */
+  .shadow-theme-light {
+    box-shadow: 0 2px 8px var(--shadow-light);
+  }
+  
+  .shadow-theme-medium {
+    box-shadow: 0 4px 16px var(--shadow-medium);
+  }
+  
+  /* Transições suaves */
+  .transition-theme {
+    transition: all 0.3s ease;
+  }
+  
+  /* Hover effects */
+  .hover-theme {
+    transition: all 0.2s ease;
+  }
+  
+  .hover-theme:hover {
+    background-color: var(--bg-hover);
+    transform: translateY(-1px);
+  }
+}
+
+/* === COMPONENTES ESPECÍFICOS === */
+.inventory-slot {
+  background-color: var(--bg-panel);
+  border-color: var(--border-soft);
+  transition: all 0.2s ease;
+}
+
+.inventory-slot:hover {
+  background-color: var(--bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-light);
+}
+
+.inventory-slot.selected {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--accent-primary);
+}
+
+.inventory-slot.drag-over {
+  border-color: var(--accent-secondary);
+  background-color: var(--bg-hover);
+}
+
+/* Custom slider styles */
+.slider-purple::-webkit-slider-thumb {
+  appearance: none;
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  box-shadow: 0 2px 4px var(--shadow-light);
+}
+
+.slider-purple::-moz-range-thumb {
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px var(--shadow-light);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-panel);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px var(--shadow-light); }
+  50% { box-shadow: 0 0 20px var(--shadow-medium); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* === RESPONSIVIDADE === */
+@media (max-width: 768px) {
+  .inventory-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .sidebar {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
