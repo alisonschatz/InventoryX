@@ -4,42 +4,46 @@ import { useState } from 'react'
 import { UserStats } from '@/types/interfaces'
 import { useInventory } from '@/hooks/useInventory'
 import { useAtmosphere } from '@/hooks/useAtmosphere'
-import { useSearch } from '@/hooks/useSearch'
 
-// Componentes principais
+// Componentes
 import Header from './Header'
 import AtmospherePanel from './AtmospherePanel'
-import Sidebar from './Sidebar'
 import InventoryGrid from './InventoryGrid'
 import InventoryList from './InventoryList'
 import ItemDetailModal from './ItemDetailModal'
 import ItemManagerModal from './ItemManagerModal'
 
 export default function HeroInventory() {
-  // Estado do usuário (mock data)
-  const [userStats] = useState<UserStats>({
+  // Estados principais
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  
+  // Dados do usuário
+  const userStats: UserStats = {
     level: 12,
     xp: 2840,
     nextLevelXp: 3000,
     streak: 7
-  })
+  }
 
-  // Estado da visualização
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-
-  // Hooks customizados
+  // Hooks
   const inventory = useInventory()
   const atmosphere = useAtmosphere()
-  const search = useSearch(inventory.tools)
+
+  // Estatísticas calculadas
+  const usedSlots = inventory.tools.length
+  const totalSlots = inventory.inventorySlots.length
+  const emptySlots = totalSlots - usedSlots
+  const legendaryItems = inventory.tools.filter(tool => tool.rarity === 'legendary').length
+  const categoriesCount = new Set(inventory.tools.map(tool => tool.category)).size
 
   return (
-    <div className="min-h-screen bg-theme-primary">
+    <div className="min-h-screen bg-theme-primary flex flex-col">
       
-      {/* Header Principal */}
+      {/* =========================== HEADER =========================== */}
       <Header
         userStats={userStats}
-        toolsCount={inventory.tools.length}
-        totalSlots={inventory.inventorySlots.length}
+        toolsCount={usedSlots}
+        totalSlots={totalSlots}
         viewMode={viewMode}
         setViewMode={setViewMode}
         atmosphereOpen={atmosphere.atmosphereOpen}
@@ -50,7 +54,7 @@ export default function HeroInventory() {
         onOpenItemManager={() => inventory.setItemManagerOpen(true)}
       />
 
-      {/* Painel de Atmosfera Musical com Sistema de Áudio Funcional */}
+      {/* ====================== PAINEL DE MÚSICA ====================== */}
       <AtmospherePanel
         atmosphereOpen={atmosphere.atmosphereOpen}
         setAtmosphereOpen={atmosphere.setAtmosphereOpen}
@@ -66,20 +70,72 @@ export default function HeroInventory() {
         clearCurrentTrack={atmosphere.clearCurrentTrack}
       />
 
-      {/* Conteúdo Principal */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex gap-6">
+      {/* ========================= CONTEÚDO PRINCIPAL ========================= */}
+      <main className="flex-1 w-full">
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
           
-          {/* Sidebar com busca e filtros */}
-          <Sidebar
-            searchTerm={search.searchTerm}
-            setSearchTerm={search.setSearchTerm}
-            tools={inventory.tools}
-            inventorySlots={inventory.inventorySlots}
-          />
+          {/* ================= DASHBOARD DE ESTATÍSTICAS ================= */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            
+            {/* Slots Usados */}
+            <div className="bg-theme-panel rounded-xl p-4 border border-theme-soft shadow-theme-light hover:shadow-theme-medium transition-all">
+              <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-1">
+                Slots Usados
+              </div>
+              <div className="text-2xl font-bold text-theme-primary">
+                {usedSlots}<span className="text-lg text-theme-secondary">/{totalSlots}</span>
+              </div>
+              <div className="w-full bg-theme-hover rounded-full h-1.5 mt-2">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-cyan-500 h-1.5 rounded-full transition-all duration-500"
+                  style={{ width: `${(usedSlots / totalSlots) * 100}%` }}
+                />
+              </div>
+            </div>
 
-          {/* Área do inventário */}
-          <div className="flex-1">
+            {/* Slots Vazios */}
+            <div className="bg-theme-panel rounded-xl p-4 border border-theme-soft shadow-theme-light hover:shadow-theme-medium transition-all">
+              <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-1">
+                Slots Livres
+              </div>
+              <div className="text-2xl font-bold text-theme-primary">
+                {emptySlots}
+              </div>
+              <div className="text-xs text-theme-secondary mt-2">
+                {((emptySlots / totalSlots) * 100).toFixed(1)}% disponível
+              </div>
+            </div>
+
+            {/* Itens Lendários */}
+            <div className="bg-theme-panel rounded-xl p-4 border border-theme-soft shadow-theme-light hover:shadow-theme-medium transition-all">
+              <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-1">
+                Lendários
+              </div>
+              <div className="text-2xl font-bold text-accent-contrast">
+                {legendaryItems}
+              </div>
+              <div className="flex items-center gap-1 mt-2">
+                <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+                <span className="text-xs text-theme-secondary">Raridade máxima</span>
+              </div>
+            </div>
+
+            {/* Categorias */}
+            <div className="bg-theme-panel rounded-xl p-4 border border-theme-soft shadow-theme-light hover:shadow-theme-medium transition-all">
+              <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-1">
+                Categorias
+              </div>
+              <div className="text-2xl font-bold text-theme-primary">
+                {categoriesCount}
+              </div>
+              <div className="text-xs text-theme-secondary mt-2">
+                Diversidade de ferramentas
+              </div>
+            </div>
+          </section>
+
+          {/* ====================== ÁREA DO INVENTÁRIO ====================== */}
+          <section className="w-full">
             {viewMode === 'grid' ? (
               <InventoryGrid
                 inventorySlots={inventory.inventorySlots}
@@ -95,23 +151,25 @@ export default function HeroInventory() {
               />
             ) : (
               <InventoryList
-                filteredTools={search.filteredTools}
+                filteredTools={inventory.tools}
                 inventorySlots={inventory.inventorySlots}
                 setSelectedSlot={inventory.setSelectedSlot}
               />
             )}
-          </div>
+          </section>
         </div>
       </main>
 
-      {/* Modal de detalhes do item */}
+      {/* ========================= MODAIS ========================= */}
+      
+      {/* Modal de Detalhes do Item */}
       <ItemDetailModal
         selectedSlot={inventory.selectedSlot}
         inventorySlots={inventory.inventorySlots}
         setSelectedSlot={inventory.setSelectedSlot}
       />
 
-      {/* Modal de gerenciamento de itens */}
+      {/* Modal de Gerenciamento de Itens */}
       <ItemManagerModal
         isOpen={inventory.itemManagerOpen}
         onClose={() => inventory.setItemManagerOpen(false)}
