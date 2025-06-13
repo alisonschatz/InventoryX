@@ -1,6 +1,6 @@
 'use client'
 
-import { Star, LayoutGrid, List, Volume2, VolumeX, Settings, Menu, X } from 'lucide-react'
+import { Volume2, VolumeX, Settings, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { UserStats, ViewMode } from '@/types/interfaces'
 import ThemeToggle from './ThemeToggle'
@@ -10,8 +10,6 @@ interface HeaderProps {
   userStats: UserStats
   toolsCount: number
   totalSlots: number
-  viewMode: ViewMode
-  setViewMode: (mode: ViewMode) => void
   atmosphereOpen: boolean
   setAtmosphereOpen: (open: boolean) => void
   currentTrack: any
@@ -23,8 +21,6 @@ export default function Header({
   userStats,
   toolsCount,
   totalSlots,
-  viewMode,
-  setViewMode,
   atmosphereOpen,
   setAtmosphereOpen,
   currentTrack,
@@ -33,9 +29,6 @@ export default function Header({
 }: HeaderProps) {
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  
-  // Calcular progresso do XP
-  const xpProgress = (userStats.xp / userStats.nextLevelXp) * 100
 
   // Handler para play/pause direto do header
   const handleQuickPlayPause = (e: React.MouseEvent) => {
@@ -146,64 +139,8 @@ export default function Header({
           <div className="md:hidden border-t border-theme-soft bg-theme-panel">
             <div className="px-3 py-4 space-y-4">
               
-              {/* Status do usuário */}
-              <div className="flex items-center gap-3 p-3 bg-theme-hover rounded-lg">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-theme-primary">
-                    Nível {userStats.level}
-                  </div>
-                  <div className="text-xs text-theme-secondary">
-                    {userStats.xp.toLocaleString()} / {userStats.nextLevelXp.toLocaleString()} XP
-                  </div>
-                  <div className="w-full bg-theme-soft rounded-full h-1.5 mt-1">
-                    <div 
-                      className="bg-gradient-to-r from-purple-500 to-cyan-500 h-full rounded-full transition-all duration-700"
-                      style={{ width: `${xpProgress}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Seletor de visualização */}
-              <div>
-                <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-2">
-                  Visualização
-                </div>
-                <div className="flex bg-theme-hover rounded-lg p-1">
-                  <button
-                    onClick={() => {
-                      setViewMode('grid')
-                      setMobileMenuOpen(false)
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${
-                      viewMode === 'grid' 
-                        ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white' 
-                        : 'text-theme-secondary'
-                    }`}
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    <span className="text-sm">Grade</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setViewMode('list')
-                      setMobileMenuOpen(false)
-                    }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${
-                      viewMode === 'list' 
-                        ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white' 
-                        : 'text-theme-secondary'
-                    }`}
-                  >
-                    <List className="w-4 h-4" />
-                    <span className="text-sm">Lista</span>
-                  </button>
-                </div>
-              </div>
-
               {/* Controles do usuário */}
-              <div className="flex items-center justify-between pt-2 border-t border-theme-soft">
+              <div className="flex items-center justify-between">
                 <ThemeToggle />
                 <UserMenu />
               </div>
@@ -214,7 +151,7 @@ export default function Header({
         {/* ===================== DESKTOP HEADER ===================== */}
         <div className="hidden md:flex items-center justify-between px-4 py-4">
           
-          {/* ========== SEÇÃO ESQUERDA - BRAND & XP ========== */}
+          {/* ========== SEÇÃO ESQUERDA - BRAND ========== */}
           <div className="flex items-center gap-6">
             
             {/* Logo e Branding */}
@@ -235,33 +172,6 @@ export default function Header({
                 <p className="text-sm text-theme-secondary">
                   {toolsCount}/{totalSlots} ferramentas ativas
                 </p>
-              </div>
-            </div>
-
-            {/* Sistema de XP */}
-            <div className="hidden lg:flex items-center gap-3 bg-theme-hover rounded-xl px-4 py-2 border border-theme-soft">
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <span className="text-sm font-bold text-theme-primary">
-                  Nível {userStats.level}
-                </span>
-              </div>
-              
-              <div className="w-32">
-                <div className="flex justify-between text-xs text-theme-secondary mb-1">
-                  <span>{userStats.xp.toLocaleString()}</span>
-                  <span>{userStats.nextLevelXp.toLocaleString()}</span>
-                </div>
-                <div className="w-full bg-theme-soft rounded-full h-2 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-purple-500 via-purple-600 to-cyan-500 h-full rounded-full transition-all duration-700 ease-out"
-                    style={{ width: `${xpProgress}%` }}
-                  />
-                </div>
-              </div>
-              
-              <div className="text-xs text-theme-secondary">
-                {Math.round(xpProgress)}%
               </div>
             </div>
           </div>
@@ -331,41 +241,7 @@ export default function Header({
               )}
             </div>
 
-            {/* Separador */}
-            <div className="w-px h-8 bg-theme-soft hidden lg:block"></div>
 
-            {/* ========== SELETOR DE VISUALIZAÇÃO ========== */}
-            <div className="flex items-center bg-theme-hover rounded-xl p-1 border border-theme-soft shadow-sm">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`
-                  p-2 rounded-lg transition-all duration-200 group
-                  ${viewMode === 'grid' 
-                    ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm' 
-                    : 'hover:bg-theme-soft text-theme-secondary hover:text-theme-primary'
-                  }
-                `}
-                title="Visualização em grade"
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`
-                  p-2 rounded-lg transition-all duration-200 group
-                  ${viewMode === 'list' 
-                    ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm' 
-                    : 'hover:bg-theme-soft text-theme-secondary hover:text-theme-primary'
-                  }
-                `}
-                title="Visualização em lista"  
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Separador */}
-            <div className="w-px h-8 bg-theme-soft hidden lg:block"></div>
 
             {/* ========== CONTROLES DE USUÁRIO ========== */}
             <div className="flex items-center gap-2">

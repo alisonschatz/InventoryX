@@ -10,7 +10,8 @@ import {
   Users, 
   Settings,
   BarChart3,
-  Zap
+  Zap,
+  Star
 } from 'lucide-react'
 
 // Types
@@ -77,6 +78,9 @@ const HeroInventory: React.FC = () => {
     }
   }), [stats])
 
+  // Calcular progresso do XP
+  const xpProgress = (userStats.xp / userStats.nextLevelXp) * 100
+
   // ========================= EVENT HANDLERS =========================
   
   const handleOpenItemManager = () => {
@@ -104,6 +108,57 @@ const HeroInventory: React.FC = () => {
   }
 
   // ========================= RENDER HELPERS =========================
+
+  /**
+   * Renderiza a barra de XP discreta
+   */
+  const renderXPBar = () => (
+    <div className="mb-6">
+      <div className="max-w-5xl mx-auto bg-theme-panel rounded-xl border border-theme-soft shadow-theme-light p-4">
+        <div className="flex items-center gap-4">
+          
+          {/* Ícone de nível */}
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-lg">
+              <Star className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-theme-primary">
+                Nível {userStats.level}
+              </div>
+              <div className="text-xs text-theme-secondary">
+                Progresso atual
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="flex-1 mx-4">
+            <div className="flex justify-between text-xs text-theme-secondary mb-1">
+              <span>{userStats.xp.toLocaleString()} XP</span>
+              <span>{userStats.nextLevelXp.toLocaleString()} XP</span>
+            </div>
+            <div className="w-full bg-theme-hover rounded-full h-2.5 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-purple-500 via-purple-600 to-cyan-500 h-full rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.min(xpProgress, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Porcentagem */}
+          <div className="text-right">
+            <div className="text-sm font-bold text-theme-primary">
+              {Math.round(xpProgress)}%
+            </div>
+            <div className="text-xs text-theme-secondary">
+              Completo
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   /**
    * Renderiza um card de métrica com ícone, título, valor e detalhes
@@ -289,8 +344,6 @@ const HeroInventory: React.FC = () => {
         userStats={userStats}
         toolsCount={metrics.utilization.used}
         totalSlots={metrics.utilization.total}
-        viewMode={viewMode}
-        setViewMode={handleViewModeChange}
         atmosphereOpen={atmosphere.atmosphereOpen}
         setAtmosphereOpen={atmosphere.setAtmosphereOpen}
         currentTrack={atmosphere.currentTrack}
@@ -320,6 +373,9 @@ const HeroInventory: React.FC = () => {
           
           {/* Banner de conversão para convidados */}
           <GuestConversionBanner />
+          
+          {/* ================= BARRA DE XP DISCRETA ================= */}
+          {renderXPBar()}
           
           {/* ================= DASHBOARD DE MÉTRICAS ================= */}
           <section className="mb-6 lg:mb-8" aria-label="Métricas do inventário">
