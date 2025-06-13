@@ -1,6 +1,6 @@
 'use client'
 
-import { Star, Settings, LayoutGrid, List } from 'lucide-react'
+import { Star, Settings, LayoutGrid, List, Package } from 'lucide-react'
 import { UserStats } from '@/types/interfaces'
 import ThemeToggle from './ThemeToggle'
 
@@ -15,6 +15,7 @@ interface HeaderProps {
   currentTrack: any
   isPlaying: boolean
   setIsPlaying: (playing: boolean) => void
+  onOpenItemManager: () => void
 }
 
 export default function Header(props: HeaderProps) {
@@ -28,7 +29,8 @@ export default function Header(props: HeaderProps) {
     setAtmosphereOpen,
     currentTrack,
     isPlaying,
-    setIsPlaying
+    setIsPlaying,
+    onOpenItemManager
   } = props
 
   const xpProgress = (userStats.xp / userStats.nextLevelXp) * 100
@@ -115,6 +117,16 @@ export default function Header(props: HeaderProps) {
                 </button>
               )}
             </div>
+
+            {/* Gerenciar Itens */}
+            <button
+              onClick={onOpenItemManager}
+              className="px-3 py-2 bg-theme-panel hover:bg-theme-hover border border-theme-soft rounded-xl transition-theme flex items-center gap-2 text-theme-primary"
+              title="Gerenciar Itens"
+            >
+              <Package className="w-4 h-4" />
+              <span className="text-sm font-medium">Itens</span>
+            </button>
 
             {/* Seletor de Visualização */}
             <div className="flex items-center bg-theme-panel rounded-xl p-1 border border-theme-soft">

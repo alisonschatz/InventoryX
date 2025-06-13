@@ -1,14 +1,40 @@
 import { useState } from 'react';
 import { Tool, DraggedItem } from '@/types/interfaces';
-import { getInitialInventorySlots } from '@/utils/inventoryData';
+import { getInitialInventorySlots, getAllAvailableItems } from '@/utils/inventoryData';
 
 export const useInventory = () => {
   const [inventorySlots, setInventorySlots] = useState(getInitialInventorySlots);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+  const [itemManagerOpen, setItemManagerOpen] = useState<boolean>(false);
 
   const tools = inventorySlots.filter((slot): slot is Tool => slot !== null);
+  const availableItems = getAllAvailableItems();
+
+  // Função para adicionar item
+  const addItem = (item: Tool, slotIndex: number) => {
+    const newSlots = [...inventorySlots];
+    newSlots[slotIndex] = { ...item, slot: slotIndex };
+    setInventorySlots(newSlots);
+  };
+
+  // Função para remover item
+  const removeItem = (slotIndex: number) => {
+    const newSlots = [...inventorySlots];
+    newSlots[slotIndex] = null;
+    setInventorySlots(newSlots);
+  };
+
+  // Função para limpar inventário
+  const clearInventory = () => {
+    setInventorySlots(Array(48).fill(null));
+  };
+
+  // Função para resetar inventário
+  const resetInventory = () => {
+    setInventorySlots(getInitialInventorySlots());
+  };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, fromSlot: number) => {
     const item = inventorySlots[fromSlot];
@@ -50,6 +76,13 @@ export const useInventory = () => {
     draggedItem,
     dragOverSlot,
     tools,
+    availableItems,
+    itemManagerOpen,
+    setItemManagerOpen,
+    addItem,
+    removeItem,
+    clearInventory,
+    resetInventory,
     handleDragStart,
     handleDragEnd,
     handleDragOver,

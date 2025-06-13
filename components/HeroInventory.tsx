@@ -11,6 +11,7 @@ import Sidebar from './Sidebar'
 import InventoryGrid from './InventoryGrid'
 import InventoryList from './InventoryList'
 import ItemDetailModal from './ItemDetailModal'
+import ItemManagerModal from './ItemManagerModal'
 
 export default function HeroInventory() {
   // Estados locais simples
@@ -41,6 +42,7 @@ export default function HeroInventory() {
         currentTrack={atmosphere.currentTrack}
         isPlaying={atmosphere.isPlaying}
         setIsPlaying={atmosphere.setIsPlaying}
+        onOpenItemManager={() => inventory.setItemManagerOpen(true)}
       />
 
       <AtmospherePanel 
@@ -92,6 +94,15 @@ export default function HeroInventory() {
         selectedSlot={inventory.selectedSlot}
         inventorySlots={inventory.inventorySlots}
         setSelectedSlot={inventory.setSelectedSlot}
+      />
+
+      <ItemManagerModal
+        isOpen={inventory.itemManagerOpen}
+        onClose={() => inventory.setItemManagerOpen(false)}
+        availableItems={inventory.availableItems}
+        onAddItem={inventory.addItem}
+        onRemoveItem={inventory.removeItem}
+        inventorySlots={inventory.inventorySlots}
       />
     </div>
   )
