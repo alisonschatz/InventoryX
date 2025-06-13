@@ -85,7 +85,35 @@ export default function Header({
           {/* Controles direita mobile */}
           <div className="flex items-center gap-2">
             
-            {/* Player compacto */}
+            {/* Botão Atmosphere - SEMPRE VISÍVEL */}
+            <button
+              onClick={() => setAtmosphereOpen(!atmosphereOpen)}
+              className={`
+                relative p-2 rounded-lg transition-all duration-200 flex items-center justify-center
+                ${currentTrack 
+                  ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-md' 
+                  : 'bg-theme-hover hover:bg-theme-soft text-theme-primary border border-theme-soft'
+                }
+              `}
+              title="Player de música ambiente"
+            >
+              {isPlaying && currentTrack ? (
+                <div className="flex items-center gap-0.5">
+                  <div className={`w-1 h-2.5 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`}></div>
+                  <div className={`w-1 h-3 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.1s' }}></div>
+                  <div className={`w-1 h-2 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+              
+              {/* Indicador de painel aberto */}
+              {atmosphereOpen && (
+                <div className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${currentTrack ? 'bg-white' : 'bg-purple-500'}`}></div>
+              )}
+            </button>
+            
+            {/* Player compacto - apenas se houver track */}
             {currentTrack && (
               <button
                 onClick={handleQuickPlayPause}
@@ -137,24 +165,6 @@ export default function Header({
                 </div>
               </div>
 
-              {/* Inventário status */}
-              <div className="flex items-center justify-between p-3 bg-theme-hover rounded-lg">
-                <div>
-                  <div className="text-sm font-medium text-theme-primary">
-                    {toolsCount}/{totalSlots} ferramentas
-                  </div>
-                  <div className="text-xs text-theme-secondary">
-                    {Math.round((toolsCount / totalSlots) * 100)}% utilizado
-                  </div>
-                </div>
-                <div className="w-12 h-2 bg-theme-soft rounded-full overflow-hidden">
-                  <div 
-                    className="bg-blue-500 h-full rounded-full transition-all"
-                    style={{ width: `${(toolsCount / totalSlots) * 100}%` }}
-                  />
-                </div>
-              </div>
-
               {/* Seletor de visualização */}
               <div>
                 <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-2">
@@ -190,47 +200,6 @@ export default function Header({
                     <span className="text-sm">Lista</span>
                   </button>
                 </div>
-              </div>
-
-              {/* Player de música */}
-              <div>
-                <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-2">
-                  Música
-                </div>
-                <button
-                  onClick={() => {
-                    setAtmosphereOpen(!atmosphereOpen)
-                    setMobileMenuOpen(false)
-                  }}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
-                    currentTrack 
-                      ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white' 
-                      : 'bg-theme-hover text-theme-primary hover:bg-theme-soft'
-                  }`}
-                >
-                  {isPlaying && currentTrack ? (
-                    <div className="flex items-center gap-0.5">
-                      <div className={`w-1 h-3 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`}></div>
-                      <div className={`w-1 h-4 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.1s' }}></div>
-                      <div className={`w-1 h-2 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                  ) : (
-                    <Volume2 className="w-4 h-4" />
-                  )}
-                  <div className="flex-1 text-left">
-                    <div className="text-sm font-medium">
-                      {currentTrack ? 'Player Ativo' : 'Atmosfera Musical'}
-                    </div>
-                    {currentTrack && (
-                      <div className="text-xs opacity-90">
-                        {currentTrack.name}
-                      </div>
-                    )}
-                  </div>
-                  {atmosphereOpen && (
-                    <div className="w-2 h-2 bg-current rounded-full"></div>
-                  )}
-                </button>
               </div>
 
               {/* Controles do usuário */}
