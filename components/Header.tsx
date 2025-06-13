@@ -1,6 +1,6 @@
 'use client'
 
-import { Star, Settings, LayoutGrid, List, Package } from 'lucide-react'
+import { Star, LayoutGrid, List, Package } from 'lucide-react'
 import { UserStats } from '@/types/interfaces'
 import ThemeToggle from './ThemeToggle'
 import UserMenu from './UserMenu'
@@ -63,7 +63,7 @@ export default function Header(props: HeaderProps) {
             </div>
 
             {/* Barra de XP */}
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-accent-contrast" />
                 <span className="text-sm font-medium text-theme-primary">
@@ -86,10 +86,10 @@ export default function Header(props: HeaderProps) {
           </div>
 
           {/* Seção Direita - Controles */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             
             {/* Controle de Atmosfera */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setAtmosphereOpen(!atmosphereOpen)}
                 className={`
@@ -99,11 +99,12 @@ export default function Header(props: HeaderProps) {
                     : 'bg-theme-panel hover:bg-theme-hover text-theme-primary border border-theme-soft'
                   }
                 `}
+                title="Controlar atmosfera musical"
               >
-                <span>{isPlaying ? '🎵' : '🎶'}</span>
-                <span className="text-sm font-medium">Atmosfera</span>
+                <span className="text-lg">{isPlaying ? '🎵' : '🎶'}</span>
+                <span className="hidden sm:block text-sm font-medium">Atmosfera</span>
                 {currentTrack && (
-                  <span className="text-xs opacity-90 truncate max-w-20">
+                  <span className="hidden md:block text-xs opacity-90 truncate max-w-20">
                     {currentTrack.name}
                   </span>
                 )}
@@ -113,20 +114,24 @@ export default function Header(props: HeaderProps) {
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
                   className="w-8 h-8 bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 text-white rounded-full flex items-center justify-center transition-theme shadow-lg"
+                  title={isPlaying ? 'Pausar música' : 'Tocar música'}
                 >
                   {isPlaying ? '⏸️' : '▶️'}
                 </button>
               )}
             </div>
 
+            {/* Separador */}
+            <div className="w-px h-8 bg-theme-soft hidden md:block"></div>
+
             {/* Gerenciar Itens */}
             <button
               onClick={onOpenItemManager}
               className="px-3 py-2 bg-theme-panel hover:bg-theme-hover border border-theme-soft rounded-xl transition-theme flex items-center gap-2 text-theme-primary"
-              title="Gerenciar Itens"
+              title="Gerenciar itens do inventário"
             >
               <Package className="w-4 h-4" />
-              <span className="text-sm font-medium">Itens</span>
+              <span className="hidden sm:block text-sm font-medium">Itens</span>
             </button>
 
             {/* Seletor de Visualização */}
@@ -136,10 +141,11 @@ export default function Header(props: HeaderProps) {
                 className={`
                   p-2 rounded-lg transition-theme
                   ${viewMode === 'grid' 
-                    ? 'bg-purple-600 text-white' 
+                    ? 'bg-purple-600 text-white shadow-sm' 
                     : 'hover:bg-theme-hover text-theme-secondary'
                   }
                 `}
+                title="Visualização em grade"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
@@ -148,25 +154,24 @@ export default function Header(props: HeaderProps) {
                 className={`
                   p-2 rounded-lg transition-theme
                   ${viewMode === 'list' 
-                    ? 'bg-purple-600 text-white' 
+                    ? 'bg-purple-600 text-white shadow-sm' 
                     : 'hover:bg-theme-hover text-theme-secondary'
                   }
                 `}
+                title="Visualização em lista"  
               >
                 <List className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Menu do Usuário */}
-            <UserMenu />
+            {/* Separador */}
+            <div className="w-px h-8 bg-theme-soft hidden md:block"></div>
 
             {/* Botão de Tema */}
             <ThemeToggle />
 
-            {/* Configurações */}
-            <button className="p-2 hover:bg-theme-hover rounded-xl transition-theme border border-theme-soft">
-              <Settings className="w-5 h-5 text-theme-secondary" />
-            </button>
+            {/* Menu do Usuário */}
+            <UserMenu />
 
           </div>
         </div>

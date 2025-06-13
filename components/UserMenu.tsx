@@ -1,158 +1,194 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { User, LogOut, Settings, Crown, Zap } from 'lucide-react'
+import { User, LogOut, Settings, Crown, Zap, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { getUserPhoto } from '@/lib/firebase-photo'
+import ProfileModal from './ProfileModal'
+import SettingsModal from './SettingsModal'
 
 export default function UserMenu() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  
   const menuRef = useRef<HTMLDivElement>(null)
   const { user, userProfile, logout } = useAuth()
 
-  // Fechar menu quando clicar fora
+  // Fechar menu ao clicar fora
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleOutsideClick = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+        setIsMenuOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick)
+    }
 
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [isMenuOpen])
+
+  // Não renderizar se não houver usuário
+  if (!user) return null
+
+  // Dados do usuário
+  const userName = user.displayName || userProfile?.displayName || 'Usuário'
+  const userEmail = user.email || ''
+  const userPhoto = getUserPhoto(user, userProfile) // Prioriza Firestore sobre Firebase Auth
+  const userLevel = userProfile?.level || 1
+  const userXP = userProfile?.xp || 0
+
+  // Handlers
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
+  
+  const openProfile = () => {
+    setIsMenuOpen(false)
+    setIsProfileOpen(true)
+  }
+  
+  const openSettings = () => {
+    setIsMenuOpen(false)
+    setIsSettingsOpen(true)
+  }
+  
   const handleLogout = async () => {
     try {
-      console.log('👋 Fazendo logout...')
       await logout()
-      setIsOpen(false)
-      console.log('✅ Logout realizado com sucesso')
+      setIsMenuOpen(false)
     } catch (error) {
-      console.error('❌ Erro ao fazer logout:', error)
+      console.error('Erro no logout:', error)
     }
   }
 
-  if (!user) {
-    console.log('⚠️ UserMenu: Usuário não logado')
-    return null
-  }
-
-  const displayName = user.displayName || userProfile?.displayName || 'Usuário'
-  const email = user.email || ''
-  const photoURL = user.photoURL || userProfile?.photoURL
-  const level = userProfile?.level || 1
-  const xp = userProfile?.xp || 0
-  const createdAt = userProfile?.createdAt || user.metadata?.creationTime
-
-  console.log('👤 UserMenu renderizando:', { displayName, email, level, xp })
-
   return (
-    <div className="relative" ref={menuRef}>
-      {/* Avatar/Trigger */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-2 hover:bg-theme-hover rounded-xl transition-theme border border-theme-soft"
-        title={`Menu do usuário - ${displayName}`}
-      >
-        {photoURL ? (
-          <img
-            src={photoURL}
-            alt={displayName}
-            className="w-8 h-8 rounded-full border-2 border-purple-200"
+    <>
+      {/* Menu Principal */}
+      <div className="relative" ref={menuRef}>
+        
+        {/* Botão do Avatar */}
+        <button
+          onClick={toggleMenu}
+          className="flex items-center gap-2 p-2 rounded-xl border border-theme-soft hover:bg-theme-hover transition-all duration-200"
+        >
+          {/* Avatar */}
+          {userPhoto ? (
+            <img
+              src={userPhoto}
+              alt={userName}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
+              <User className="w-4 h-4 text-white" />
+            </div>
+          )}
+          
+          {/* Nome (apenas desktop) */}
+          <span className="hidden md:block text-sm font-medium text-theme-primary">
+            {userName.split(' ')[0]}
+          </span>
+          
+          {/* Seta */}
+          <ChevronDown 
+            className={`w-4 h-4 text-theme-secondary transition-transform duration-200 ${
+              isMenuOpen ? 'rotate-180' : ''
+            }`} 
           />
-        ) : (
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-cyan-500 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
+        </button>
+
+        {/* Dropdown Menu */}
+        {isMenuOpen && (
+          <div className="absolute right-0 top-full mt-2 w-80 bg-theme-panel border border-theme-soft rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+            
+            {/* Header do Usuário */}
+            <div className="p-4 bg-gradient-to-r from-purple-50 to-cyan-50 dark:from-purple-900/20 dark:to-cyan-900/20">
+              <div className="flex items-center gap-3">
+                
+                {/* Avatar Grande */}
+                {userPhoto ? (
+                  <img
+                    src={userPhoto}
+                    alt={userName}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center border-2 border-white shadow-sm">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                )}
+                
+                {/* Info do Usuário */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-theme-primary truncate">
+                    {userName}
+                  </h3>
+                  <p className="text-sm text-theme-secondary truncate">
+                    {userEmail}
+                  </p>
+                </div>
+                
+                {/* Badges de Nível e XP */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                    <Crown className="w-3 h-3 text-yellow-600" />
+                    <span className="text-xs font-bold text-yellow-700 dark:text-yellow-400">
+                      {userLevel}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <Zap className="w-3 h-3 text-purple-600" />
+                    <span className="text-xs font-bold text-purple-700 dark:text-purple-400">
+                      {userXP}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-2">
+              
+              {/* Meu Perfil */}
+              <button
+                onClick={openProfile}
+                className="w-full flex items-center gap-3 px-4 py-3 text-theme-primary hover:bg-theme-hover transition-colors"
+              >
+                <User className="w-5 h-5 text-purple-600" />
+                <span className="font-medium">Meu Perfil</span>
+              </button>
+
+              {/* Divisor */}
+              <div className="my-2 border-t border-theme-soft"></div>
+
+              {/* Sair */}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Sair da Conta</span>
+              </button>
+            </div>
           </div>
         )}
-        <span className="hidden md:block text-sm font-medium text-theme-primary">
-          {displayName.split(' ')[0]}
-        </span>
-      </button>
+      </div>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-theme-panel rounded-xl shadow-theme-medium border border-theme-soft overflow-hidden z-50 animate-fade-in">
-          {/* Header do usuário */}
-          <div className="p-4 bg-gradient-to-r from-purple-600/10 to-cyan-500/10 border-b border-theme-soft">
-            <div className="flex items-center gap-3">
-              {photoURL ? (
-                <img
-                  src={photoURL}
-                  alt={displayName}
-                  className="w-12 h-12 rounded-full border-2 border-purple-200"
-                />
-              ) : (
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-cyan-500 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-theme-primary truncate">
-                  {displayName}
-                </div>
-                <div className="text-sm text-theme-secondary truncate">
-                  {email}
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-full">
-                  <Crown className="w-3 h-3 text-yellow-600" />
-                  <span className="text-xs font-medium text-yellow-700">Nv.{level}</span>
-                </div>
-                <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-purple-100 to-cyan-100 rounded-full">
-                  <Zap className="w-3 h-3 text-purple-600" />
-                  <span className="text-xs font-medium text-purple-700">{xp} XP</span>
-                </div>
-              </div>
-            </div>
-          </div>
+      {/* Modals */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        onOpenSettings={() => {
+          setIsProfileOpen(false)
+          setIsSettingsOpen(true)
+        }}
+      />
 
-          {/* Menu Items */}
-          <div className="py-2">
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                // Aqui você pode adicionar navegação para perfil
-                console.log('📋 Abrir perfil do usuário')
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-theme-primary hover:bg-theme-hover transition-theme"
-            >
-              <User className="w-4 h-4" />
-              <span className="text-sm">Meu Perfil</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setIsOpen(false)
-                // Aqui você pode adicionar navegação para configurações
-                console.log('⚙️ Abrir configurações')
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-theme-primary hover:bg-theme-hover transition-theme"
-            >
-              <Settings className="w-4 h-4" />
-              <span className="text-sm">Configurações</span>
-            </button>
-
-            <div className="border-t border-theme-soft my-2"></div>
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-theme"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">Sair</span>
-            </button>
-          </div>
-
-          {/* Footer */}
-          <div className="px-4 py-3 bg-theme-hover border-t border-theme-soft">
-            <div className="text-xs text-theme-secondary">
-              Membro desde {createdAt ? new Date(createdAt).toLocaleDateString('pt-BR') : 'Hoje'}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+    </>
   )
 }
