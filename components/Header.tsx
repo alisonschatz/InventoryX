@@ -1,7 +1,8 @@
 'use client'
 
-import { Star, LayoutGrid, List } from 'lucide-react'
-import { UserStats } from '@/types/interfaces'
+import { Star, LayoutGrid, List, Volume2, VolumeX, Settings, Menu, X } from 'lucide-react'
+import { useState } from 'react'
+import { UserStats, ViewMode } from '@/types/interfaces'
 import ThemeToggle from './ThemeToggle'
 import UserMenu from './UserMenu'
 
@@ -9,8 +10,8 @@ interface HeaderProps {
   userStats: UserStats
   toolsCount: number
   totalSlots: number
-  viewMode: 'grid' | 'list'
-  setViewMode: (mode: 'grid' | 'list') => void
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
   atmosphereOpen: boolean
   setAtmosphereOpen: (open: boolean) => void
   currentTrack: any
@@ -31,6 +32,8 @@ export default function Header({
   setIsPlaying
 }: HeaderProps) {
   
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
   // Calcular progresso do XP
   const xpProgress = (userStats.xp / userStats.nextLevelXp) * 100
 
@@ -50,12 +53,199 @@ export default function Header({
     }
   }
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen)
+  }
+
   return (
     <header className="bg-theme-panel shadow-theme-light border-b border-theme-soft sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* ===================== MOBILE HEADER ===================== */}
+        <div className="flex items-center justify-between px-3 py-3 md:hidden">
           
-          {/* ==================== SEÇÃO ESQUERDA - BRAND & XP ==================== */}
+          {/* Logo compacto */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 via-purple-700 to-cyan-500 rounded-lg flex items-center justify-center">
+              <img 
+                src="/img/logo.png" 
+                alt="InventoryX" 
+                className="w-6 h-6 object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">
+                <span className="bg-gradient-to-r from-purple-600 via-purple-700 to-cyan-500 bg-clip-text text-transparent">
+                  InventoryX
+                </span>
+              </h1>
+            </div>
+          </div>
+
+          {/* Controles direita mobile */}
+          <div className="flex items-center gap-2">
+            
+            {/* Player compacto */}
+            {currentTrack && (
+              <button
+                onClick={handleQuickPlayPause}
+                className="w-8 h-8 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all"
+                title={isPlaying ? 'Pausar música' : 'Tocar música'}
+              >
+                {isPlaying ? (
+                  <div className="flex gap-0.5">
+                    <div className="w-0.5 h-2 bg-white rounded-full"></div>
+                    <div className="w-0.5 h-2 bg-white rounded-full"></div>
+                  </div>
+                ) : (
+                  <div className="w-0 h-0 border-l-[3px] border-l-white border-y-[2px] border-y-transparent ml-0.5"></div>
+                )}
+              </button>
+            )}
+
+            {/* Menu hamburger */}
+            <button
+              onClick={toggleMobileMenu}
+              className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-theme-hover rounded-lg transition-colors"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* ===================== MOBILE MENU ===================== */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-theme-soft bg-theme-panel">
+            <div className="px-3 py-4 space-y-4">
+              
+              {/* Status do usuário */}
+              <div className="flex items-center gap-3 p-3 bg-theme-hover rounded-lg">
+                <Star className="w-4 h-4 text-yellow-500" />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-theme-primary">
+                    Nível {userStats.level}
+                  </div>
+                  <div className="text-xs text-theme-secondary">
+                    {userStats.xp.toLocaleString()} / {userStats.nextLevelXp.toLocaleString()} XP
+                  </div>
+                  <div className="w-full bg-theme-soft rounded-full h-1.5 mt-1">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-cyan-500 h-full rounded-full transition-all duration-700"
+                      style={{ width: `${xpProgress}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Inventário status */}
+              <div className="flex items-center justify-between p-3 bg-theme-hover rounded-lg">
+                <div>
+                  <div className="text-sm font-medium text-theme-primary">
+                    {toolsCount}/{totalSlots} ferramentas
+                  </div>
+                  <div className="text-xs text-theme-secondary">
+                    {Math.round((toolsCount / totalSlots) * 100)}% utilizado
+                  </div>
+                </div>
+                <div className="w-12 h-2 bg-theme-soft rounded-full overflow-hidden">
+                  <div 
+                    className="bg-blue-500 h-full rounded-full transition-all"
+                    style={{ width: `${(toolsCount / totalSlots) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Seletor de visualização */}
+              <div>
+                <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-2">
+                  Visualização
+                </div>
+                <div className="flex bg-theme-hover rounded-lg p-1">
+                  <button
+                    onClick={() => {
+                      setViewMode('grid')
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${
+                      viewMode === 'grid' 
+                        ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white' 
+                        : 'text-theme-secondary'
+                    }`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span className="text-sm">Grade</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setViewMode('list')
+                      setMobileMenuOpen(false)
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md transition-all ${
+                      viewMode === 'list' 
+                        ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white' 
+                        : 'text-theme-secondary'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                    <span className="text-sm">Lista</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Player de música */}
+              <div>
+                <div className="text-xs font-medium text-theme-secondary uppercase tracking-wide mb-2">
+                  Música
+                </div>
+                <button
+                  onClick={() => {
+                    setAtmosphereOpen(!atmosphereOpen)
+                    setMobileMenuOpen(false)
+                  }}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                    currentTrack 
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white' 
+                      : 'bg-theme-hover text-theme-primary hover:bg-theme-soft'
+                  }`}
+                >
+                  {isPlaying && currentTrack ? (
+                    <div className="flex items-center gap-0.5">
+                      <div className={`w-1 h-3 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`}></div>
+                      <div className={`w-1 h-4 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.1s' }}></div>
+                      <div className={`w-1 h-2 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  ) : (
+                    <Volume2 className="w-4 h-4" />
+                  )}
+                  <div className="flex-1 text-left">
+                    <div className="text-sm font-medium">
+                      {currentTrack ? 'Player Ativo' : 'Atmosfera Musical'}
+                    </div>
+                    {currentTrack && (
+                      <div className="text-xs opacity-90">
+                        {currentTrack.name}
+                      </div>
+                    )}
+                  </div>
+                  {atmosphereOpen && (
+                    <div className="w-2 h-2 bg-current rounded-full"></div>
+                  )}
+                </button>
+              </div>
+
+              {/* Controles do usuário */}
+              <div className="flex items-center justify-between pt-2 border-t border-theme-soft">
+                <ThemeToggle />
+                <UserMenu />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ===================== DESKTOP HEADER ===================== */}
+        <div className="hidden md:flex items-center justify-between px-4 py-4">
+          
+          {/* ========== SEÇÃO ESQUERDA - BRAND & XP ========== */}
           <div className="flex items-center gap-6">
             
             {/* Logo e Branding */}
@@ -82,7 +272,7 @@ export default function Header({
             {/* Sistema de XP */}
             <div className="hidden lg:flex items-center gap-3 bg-theme-hover rounded-xl px-4 py-2 border border-theme-soft">
               <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-accent-contrast" />
+                <Star className="w-4 h-4 text-yellow-500" />
                 <span className="text-sm font-bold text-theme-primary">
                   Nível {userStats.level}
                 </span>
@@ -107,7 +297,7 @@ export default function Header({
             </div>
           </div>
 
-          {/* ==================== SEÇÃO DIREITA - CONTROLES ==================== */}
+          {/* ========== SEÇÃO DIREITA - CONTROLES ========== */}
           <div className="flex items-center gap-3">
             
             {/* ========== PLAYER DE MÚSICA ========== */}
@@ -132,9 +322,7 @@ export default function Header({
                       <div className={`w-1 h-2 rounded-full animate-pulse ${currentTrack ? 'bg-white' : 'bg-purple-500'}`} style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   ) : (
-                    <svg className={`w-4 h-4 ${currentTrack ? 'text-white' : 'text-purple-500'}`} fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.785l-4-3.143A1 1 0 014 13V7a1 1 0 01.383-.924l4-3.143a1 1 0 011.234.143zM16 5.5a1 1 0 01-1 1 .5.5 0 000 1 1 1 0 011 1 3.5 3.5 0 000-7zM15 8.5a.5.5 0 01-.5-.5 2.5 2.5 0 000 5 .5.5 0 01.5-.5 1 1 0 000-2 1 1 0 000-2z" clipRule="evenodd" />
-                    </svg>
+                    <Volume2 className="w-4 h-4" />
                   )}
                 </div>
 
@@ -175,7 +363,7 @@ export default function Header({
             </div>
 
             {/* Separador */}
-            <div className="w-px h-8 bg-theme-soft hidden md:block"></div>
+            <div className="w-px h-8 bg-theme-soft hidden lg:block"></div>
 
             {/* ========== SELETOR DE VISUALIZAÇÃO ========== */}
             <div className="flex items-center bg-theme-hover rounded-xl p-1 border border-theme-soft shadow-sm">
@@ -208,7 +396,7 @@ export default function Header({
             </div>
 
             {/* Separador */}
-            <div className="w-px h-8 bg-theme-soft hidden md:block"></div>
+            <div className="w-px h-8 bg-theme-soft hidden lg:block"></div>
 
             {/* ========== CONTROLES DE USUÁRIO ========== */}
             <div className="flex items-center gap-2">
