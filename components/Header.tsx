@@ -3,6 +3,7 @@
 import { Star, Settings, LayoutGrid, List, Package } from 'lucide-react'
 import { UserStats } from '@/types/interfaces'
 import ThemeToggle from './ThemeToggle'
+import UserMenu from './UserMenu'
 
 interface HeaderProps {
   userStats: UserStats
@@ -155,6 +156,9 @@ export default function Header(props: HeaderProps) {
                 <List className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Menu do Usuário */}
+            <UserMenu />
 
             {/* Botão de Tema */}
             <ThemeToggle />
