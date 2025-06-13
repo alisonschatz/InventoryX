@@ -13,23 +13,23 @@ import InventoryList from './InventoryList'
 import ItemDetailModal from './ItemDetailModal'
 
 export default function HeroInventory() {
-  // Estados básicos
+  // Estados locais simples
   const [userStats] = useState<UserStats>({
     level: 12,
     xp: 2840,
     nextLevelXp: 3000,
     streak: 7
   })
+  
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
-  // Hooks customizados
+  // Hooks que gerenciam a lógica complexa
   const inventory = useInventory()
   const atmosphere = useAtmosphere()
   const search = useSearch(inventory.tools)
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Cabeçalho */}
+    <div className="min-h-screen bg-theme-primary">
       <Header
         userStats={userStats}
         toolsCount={inventory.tools.length}
@@ -43,7 +43,6 @@ export default function HeroInventory() {
         setIsPlaying={atmosphere.setIsPlaying}
       />
 
-      {/* Painel Musical */}
       <AtmospherePanel 
         atmosphereOpen={atmosphere.atmosphereOpen}
         setAtmosphereOpen={atmosphere.setAtmosphereOpen}
@@ -55,10 +54,8 @@ export default function HeroInventory() {
         setVolume={atmosphere.setVolume}
       />
 
-      {/* Conteúdo Principal */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex gap-6">
-          {/* Barra Lateral */}
           <Sidebar
             searchTerm={search.searchTerm}
             setSearchTerm={search.setSearchTerm}
@@ -66,7 +63,6 @@ export default function HeroInventory() {
             inventorySlots={inventory.inventorySlots}
           />
 
-          {/* Área do Inventário */}
           <div className="flex-1">
             {viewMode === 'grid' ? (
               <InventoryGrid
@@ -90,9 +86,8 @@ export default function HeroInventory() {
             )}
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Modal de Detalhes */}
       <ItemDetailModal
         selectedSlot={inventory.selectedSlot}
         inventorySlots={inventory.inventorySlots}
