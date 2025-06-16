@@ -1,4 +1,4 @@
-// hooks/useInventory.ts - Atualizado com sincronização Firebase
+// hooks/useInventory.ts - Corrigido para não resetar ao relogar
 'use client'
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
@@ -147,15 +147,8 @@ export const useInventory = () => {
   // ========================= STATES =========================
   
   const [inventorySlots, setInventorySlots] = useState<(Tool | null)[]>(() => {
-    const slots = new Array(TOTAL_SLOTS).fill(null)
-    const defaultTools = createDefaultTools()
-    
-    // Inserir ferramentas padrão nos primeiros slots (apenas inicialmente)
-    defaultTools.forEach((tool, index) => {
-      slots[index] = tool
-    })
-    
-    return slots
+    // Inicializar com array vazio - será carregado depois
+    return new Array(TOTAL_SLOTS).fill(null)
   })
 
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
@@ -163,75 +156,131 @@ export const useInventory = () => {
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
   const [isInitializing, setIsInitializing] = useState(true)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
 
   // ========================= EFFECTS =========================
 
   // Carregar inventário do Firebase quando usuário logar
   useEffect(() => {
     const initializeInventory = async () => {
-      if (authLoading) return // Aguardar autenticação
+      if (authLoading) {
+        debugService.info('firebase', 'Aguardando autenticação...')
+        return // Aguardar autenticação
+      }
 
       setIsInitializing(true)
 
       try {
         if (user && !isGuestMode) {
-          debugService.info('firebase', 'Carregando inventário do usuário')
+          debugService.info('firebase', 'Usuário logado - carregando inventário do Firestore')
           
           const loadedInventory = await loadFromFirebase()
           
           if (loadedInventory && loadedInventory.length === TOTAL_SLOTS) {
-            debugService.success('firebase', 'Inventário carregado do Firestore')
-            setInventorySlots(loadedInventory)
-          } else {
-            debugService.info('firebase', 'Nenhum inventário salvo - usando padrão')
-            // Manter inventário padrão e salvar no Firebase
-            const defaultSlots = new Array(TOTAL_SLOTS).fill(null)
-            const defaultTools = createDefaultTools()
-            
-            defaultTools.forEach((tool, index) => {
-              defaultSlots[index] = tool
+            debugService.success('firebase', 'Inventário carregado do Firestore', {
+              toolsCount: loadedInventory.filter(slot => slot !== null).length
             })
+            setInventorySlots(loadedInventory)
+            setHasLoadedOnce(true)
+          } else {
+            debugService.info('firebase', 'Nenhum inventário encontrado no Firestore')
             
-            setInventorySlots(defaultSlots)
-            await saveToFirebase(defaultSlots)
+            // Verificar se já carregou alguma vez (para não resetar ao relogar)
+            if (!hasLoadedOnce) {
+              debugService.info('firebase', 'Primeira vez do usuário - criando inventário padrão')
+              const defaultSlots = new Array(TOTAL_SLOTS).fill(null)
+              const defaultTools = createDefaultTools()
+              
+              defaultTools.forEach((tool, index) => {
+                defaultSlots[index] = tool
+              })
+              
+              setInventorySlots(defaultSlots)
+              setHasLoadedOnce(true)
+              
+              // Salvar inventário padrão no Firebase
+              await saveToFirebase(defaultSlots)
+            } else {
+              debugService.warning('firebase', 'Usuário já carregou antes - mantendo inventário atual')
+            }
           }
         } else if (isGuestMode) {
-          debugService.info('guest', 'Modo convidado - usando localStorage')
+          debugService.info('guest', 'Modo convidado - carregando do localStorage')
+          
           // Para convidados, tentar carregar do localStorage
           const savedGuest = localStorage.getItem('inventoryx-guest-inventory')
           if (savedGuest) {
             try {
               const parsed = JSON.parse(savedGuest)
               if (Array.isArray(parsed) && parsed.length === TOTAL_SLOTS) {
+                debugService.success('guest', 'Inventário de convidado carregado do localStorage')
                 setInventorySlots(parsed)
+                setHasLoadedOnce(true)
               }
             } catch (error) {
               debugService.error('guest', 'Erro ao carregar inventário do localStorage', error)
+              // Se erro, usar padrão apenas se nunca carregou
+              if (!hasLoadedOnce) {
+                setInventoryToDefault()
+              }
             }
+          } else if (!hasLoadedOnce) {
+            // Se não tem dados salvos e é primeira vez, usar padrão
+            debugService.info('guest', 'Primeira vez como convidado - usando inventário padrão')
+            setInventoryToDefault()
+          }
+        } else {
+          // Não autenticado - manter inventário atual se já carregou
+          if (!hasLoadedOnce) {
+            debugService.info('auth', 'Não autenticado - usando inventário padrão')
+            setInventoryToDefault()
           }
         }
       } catch (error) {
         debugService.error('firebase', 'Erro ao inicializar inventário', error)
+        
+        // Em caso de erro, só usar padrão se nunca carregou antes
+        if (!hasLoadedOnce) {
+          setInventoryToDefault()
+        }
       } finally {
         setIsInitializing(false)
       }
     }
 
-    initializeInventory()
-  }, [user, isGuestMode, authLoading, loadFromFirebase, saveToFirebase])
+    // Função helper para configurar inventário padrão
+    const setInventoryToDefault = () => {
+      const defaultSlots = new Array(TOTAL_SLOTS).fill(null)
+      const defaultTools = createDefaultTools()
+      
+      defaultTools.forEach((tool, index) => {
+        defaultSlots[index] = tool
+      })
+      
+      setInventorySlots(defaultSlots)
+      setHasLoadedOnce(true)
+    }
 
-  // Auto-salvar mudanças no inventário
+    initializeInventory()
+  }, [user, isGuestMode, authLoading, loadFromFirebase, saveToFirebase, hasLoadedOnce])
+
+  // Auto-salvar mudanças no inventário (apenas após carregamento inicial)
   useEffect(() => {
-    if (isInitializing || authLoading) return
+    if (isInitializing || authLoading || !hasLoadedOnce) {
+      debugService.info('firebase', 'Pulando auto-save - ainda inicializando')
+      return
+    }
 
     if (user && !isGuestMode) {
       // Para usuários reais, salvar no Firebase
+      debugService.info('firebase', 'Auto-salvando inventário no Firestore')
       saveToFirebase(inventorySlots)
     } else if (isGuestMode) {
       // Para convidados, salvar no localStorage
+      debugService.info('guest', 'Auto-salvando inventário no localStorage')
       localStorage.setItem('inventoryx-guest-inventory', JSON.stringify(inventorySlots))
     }
-  }, [inventorySlots, user, isGuestMode, isInitializing, authLoading, saveToFirebase])
+  }, [inventorySlots, user, isGuestMode, isInitializing, authLoading, hasLoadedOnce, saveToFirebase])
 
   // ========================= COMPUTED VALUES =========================
 
