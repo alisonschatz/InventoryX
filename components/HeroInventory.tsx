@@ -11,6 +11,7 @@ import { useInventory } from '@/hooks/useInventory'
 import { useAtmosphere } from '@/hooks/useAtmosphere'
 import { useTodo } from '@/hooks/useTodo'
 import { usePomodoro } from '@/hooks/usePomodoro'
+import { useKanban } from '@/hooks/useKanban'
 
 // Components
 import Header from './Header'
@@ -24,6 +25,7 @@ import XPSystem from './XPSystem'
 import MetricsDashboard from './MetricsDashboard'
 import TodoTool from './TodoTool'
 import PomodoroTool from './PomodoroTool'
+import KanbanTool from './KanbanTool'
 
 // ========================= MAIN COMPONENT =========================
 
@@ -34,6 +36,7 @@ const HeroInventory: React.FC = () => {
   const atmosphere = useAtmosphere()
   const todo = useTodo()
   const pomodoro = usePomodoro()
+  const kanban = useKanban()
 
   // ========================= LOCAL STATE =========================
   
@@ -103,6 +106,16 @@ const HeroInventory: React.FC = () => {
         slot: 1,
         description: 'Técnica Pomodoro para aumentar foco e produtividade com sessões cronometradas de trabalho e pausas.',
         isActive: true
+      },
+      {
+        id: 'kanban-board',
+        name: 'Kanban Board',
+        icon: '📋',
+        category: 'Projetos',
+        rarity: 'epic' as const,
+        slot: 2,
+        description: 'Quadro Kanban para gerenciamento visual de projetos e tarefas. Organize fluxos de trabalho com colunas personalizáveis.',
+        isActive: true
       }
     ]
 
@@ -152,10 +165,13 @@ const HeroInventory: React.FC = () => {
   }
 
   const handleOpenTool = (toolId: string) => {
+    console.log('🎯 handleOpenTool chamado com:', toolId)
+    
     // Identificar e abrir a ferramenta correta
     const toolMatchers = {
       todo: ['todo-list', 'todo-advanced', 'task-manager'],
-      pomodoro: ['pomodoro-timer', 'pomodoro-tool', 'timer']
+      pomodoro: ['pomodoro-timer', 'pomodoro-tool', 'timer'],
+      kanban: ['kanban-board', 'kanban-tool', 'project-board', 'board', 'project-manager']
     }
 
     const searchInSlots = (keywords: string[]) => {
@@ -169,17 +185,37 @@ const HeroInventory: React.FC = () => {
     // Verificar To-Do
     const isTodoTool = toolMatchers.todo.includes(toolId) ||
                      toolId.includes('todo') ||
-                     searchInSlots(['tarefas', 'to-do', 'task'])
+                     searchInSlots(['tarefas', 'to-do', 'task', 'lista'])
 
     // Verificar Pomodoro  
     const isPomodoroTool = toolMatchers.pomodoro.includes(toolId) ||
                          toolId.includes('pomodoro') ||
                          searchInSlots(['pomodoro', 'timer', 'cronômetro'])
 
+    // Verificar Kanban
+    const isKanbanTool = toolMatchers.kanban.includes(toolId) ||
+                       toolId.includes('kanban') ||
+                       toolId.includes('board') ||
+                       searchInSlots(['kanban', 'board', 'projeto', 'quadro', 'painel'])
+
+    console.log('🔍 Verificação de ferramentas:', {
+      toolId,
+      isTodoTool,
+      isPomodoroTool,
+      isKanbanTool
+    })
+
     if (isTodoTool) {
+      console.log('✅ Abrindo Todo Tool')
       todo.openTodo()
     } else if (isPomodoroTool) {
+      console.log('🍅 Abrindo Pomodoro Tool')
       pomodoro.openPomodoro()
+    } else if (isKanbanTool) {
+      console.log('📋 Abrindo Kanban Tool')
+      kanban.openKanban()
+    } else {
+      console.log('❌ Ferramenta não reconhecida:', toolId)
     }
 
     // Fechar modal de detalhes
@@ -339,7 +375,7 @@ const HeroInventory: React.FC = () => {
         </div>
       </main>
 
-      {/* Modais e Ferramentas */}
+      {/* ========================= MODAIS E FERRAMENTAS ========================= */}
       
       {/* Modal de Detalhes */}
       <ItemDetailModal
@@ -359,15 +395,24 @@ const HeroInventory: React.FC = () => {
         inventorySlots={inventory.inventorySlots}
       />
 
-      {/* Ferramentas */}
+      {/* ========================= FERRAMENTAS INTERATIVAS ========================= */}
+      
+      {/* Todo Tool */}
       <TodoTool
         isOpen={todo.isTodoOpen}
         onClose={todo.closeTodo}
       />
       
+      {/* Pomodoro Tool */}
       <PomodoroTool
         isOpen={pomodoro.isPomodoroOpen}
         onClose={pomodoro.closePomodoro}
+      />
+
+      {/* Kanban Tool */}
+      <KanbanTool
+        isOpen={kanban.isKanbanOpen}
+        onClose={kanban.closeKanban}
       />
     </div>
   )

@@ -39,44 +39,52 @@ const MetricCard: React.FC<MetricCardProps> = ({
   progress,
   badge
 }) => (
-  <div className="bg-theme-panel rounded-xl p-4 lg:p-5 border border-theme-soft shadow-theme-light hover:shadow-theme-medium transition-all duration-300 group cursor-default">
-    {/* Header com ícone e badge */}
-    <div className="flex items-center justify-between mb-3">
-      <div className={`p-2.5 rounded-lg ${colorClasses}`}>
-        <IconComponent className="w-4 h-4 lg:w-5 lg:h-5" />
+  <div className="bg-theme-panel rounded-lg p-3 border border-theme-soft shadow-sm hover:shadow-md transition-all duration-300 group cursor-default">
+    {/* Layout horizontal compacto */}
+    <div className="flex items-center justify-between">
+      
+      {/* Ícone e valor em linha */}
+      <div className="flex items-center gap-2">
+        <div className={`p-1.5 rounded-md ${colorClasses}`}>
+          <IconComponent className="w-4 h-4" />
+        </div>
+        <div>
+          <div className="text-lg font-bold text-theme-primary group-hover:scale-105 transition-transform">
+            {value}
+          </div>
+          <div className="text-xs text-theme-secondary uppercase tracking-wide">
+            {title}
+          </div>
+        </div>
       </div>
-      {badge && (
-        <span className="text-xs font-medium text-theme-secondary bg-theme-hover px-2 py-1 rounded-full border border-theme-soft">
-          {badge}
-        </span>
-      )}
+
+      {/* Badge e progresso */}
+      <div className="flex items-center gap-2">
+        {badge && (
+          <span className="text-xs font-medium text-theme-secondary bg-theme-hover px-2 py-1 rounded-full border border-theme-soft">
+            {badge}
+          </span>
+        )}
+        
+        {/* Barra de progresso vertical pequena */}
+        {typeof progress === 'number' && (
+          <div className="w-1 h-8 bg-theme-hover rounded-full overflow-hidden">
+            <div 
+              className="w-full rounded-full transition-all duration-700 ease-out bg-gradient-to-t from-current to-current opacity-60"
+              style={{ 
+                height: `${Math.min(progress, 100)}%`,
+                marginTop: `${100 - Math.min(progress, 100)}%`
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
 
-    {/* Conteúdo principal */}
-    <div className="space-y-2">
-      <h3 className="text-xs lg:text-sm font-medium text-theme-secondary uppercase tracking-wide">
-        {title}
-      </h3>
-      
-      <div className="text-xl lg:text-2xl font-bold text-theme-primary group-hover:scale-105 transition-transform">
-        {value}
-      </div>
-      
-      {/* Barra de progresso opcional */}
-      {typeof progress === 'number' && (
-        <div className="w-full bg-theme-hover rounded-full h-2 overflow-hidden">
-          <div 
-            className="h-full rounded-full transition-all duration-700 ease-out bg-gradient-to-r from-current to-current opacity-80"
-            style={{ width: `${Math.min(progress, 100)}%` }}
-          />
-        </div>
-      )}
-      
-      {/* Subtítulo */}
-      <p className="text-xs text-theme-secondary leading-relaxed">
-        {subtitle}
-      </p>
-    </div>
+    {/* Subtítulo compacto */}
+    <p className="text-xs text-theme-secondary leading-relaxed mt-1 line-clamp-1">
+      {subtitle}
+    </p>
   </div>
 )
 
@@ -95,7 +103,7 @@ export default function MetricsDashboard({
     return {
       xp: totalXP,
       streakProgress: Math.min((userStats.streak / 7) * 100, 100),
-      badge: userStats.streak >= 7 ? '🔥 Fire!' : '⚡ Ativo'
+      badge: userStats.streak >= 7 ? '🔥' : '⚡'
     }
   }
 
@@ -109,9 +117,9 @@ export default function MetricsDashboard({
     
     return {
       timeDisplay: `${hours}h ${minutes}m`,
-      lastActivity: `há ${lastActivity} minutos`,
+      lastActivity: `há ${lastActivity}min`,
       progress: Math.min(progressBase + progressBonus, 100),
-      badge: '⏰ Online'
+      badge: '⏰'
     }
   }
 
@@ -121,7 +129,7 @@ export default function MetricsDashboard({
     
     return {
       display: `${utilizationData.used}/${utilizationData.total}`,
-      subtitle: `${utilizationData.free} slots livres • ${freePercentage}% de capacidade disponível`,
+      subtitle: `${utilizationData.free} slots livres • ${freePercentage}% disponível`,
       progress: utilizationData.percentage,
       badge: `${utilizationData.percentage}%`
     }
@@ -133,13 +141,13 @@ export default function MetricsDashboard({
   const utilization = getUtilizationData()
 
   return (
-    <section className={`mb-6 lg:mb-8 ${className}`} aria-label="Métricas do inventário">
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+    <section className={`mb-6 ${className}`} aria-label="Métricas do inventário">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
         
         {/* Card: Utilização do Inventário */}
         <MetricCard
           IconComponent={BarChart3}
-          title="Utilização do Inventário"
+          title="Utilização"
           value={utilization.display}
           subtitle={utilization.subtitle}
           colorClasses="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 text-blue-600"
@@ -150,9 +158,9 @@ export default function MetricsDashboard({
         {/* Card: Produtividade Hoje */}
         <MetricCard
           IconComponent={Zap}
-          title="Produtividade Hoje"
+          title="Produtividade"
           value={`+${productivityData.xp} XP`}
-          subtitle={`Streak de ${userStats.streak} dias • Meta diária atingida`}
+          subtitle={`Streak ${userStats.streak} dias • Meta atingida`}
           colorClasses="bg-gradient-to-br from-green-500/10 to-emerald-500/10 text-green-600"
           progress={productivityData.streakProgress}
           badge={productivityData.badge}
@@ -161,9 +169,9 @@ export default function MetricsDashboard({
         {/* Card: Tempo Ativo Hoje */}
         <MetricCard
           IconComponent={Settings}
-          title="Tempo Ativo Hoje"
+          title="Tempo Ativo"
           value={activeTimeData.timeDisplay}
-          subtitle={`Última ferramenta usada ${activeTimeData.lastActivity}`}
+          subtitle={`Última atividade ${activeTimeData.lastActivity}`}
           colorClasses="bg-gradient-to-br from-purple-500/10 to-pink-500/10 text-purple-600"
           progress={activeTimeData.progress}
           badge={activeTimeData.badge}

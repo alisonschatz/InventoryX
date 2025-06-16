@@ -48,23 +48,92 @@ export default function ItemDetailModal({
     }
   }
 
-  // Verificar se a ferramenta é interativa
-  const isInteractiveTool = ['todo-list', 'todo-advanced', 'task-manager', 'pomodoro-timer'].includes(item.id) || 
-                           item.name.includes('Lista de Tarefas') || 
-                           item.name.includes('To-Do') ||
-                           item.name.includes('Pomodoro') ||
-                           item.name.includes('Timer')
+  // Verificar se a ferramenta é interativa - ATUALIZADO COM KANBAN
+  const isInteractiveTool = [
+    // IDs específicos das ferramentas
+    'todo-list', 
+    'todo-advanced', 
+    'task-manager',
+    'pomodoro-timer',
+    'pomodoro-tool',
+    'kanban-board',    // ← NOVO: Kanban Board
+    'kanban-tool',     // ← NOVO: Kanban Tool
+    'project-board'    // ← NOVO: Project Board
+  ].includes(item.id) || 
+  // Verificação por palavras-chave no nome
+  item.name.toLowerCase().includes('lista de tarefas') || 
+  item.name.toLowerCase().includes('to-do') ||
+  item.name.toLowerCase().includes('todo') ||
+  item.name.toLowerCase().includes('tarefa') ||
+  item.name.toLowerCase().includes('pomodoro') ||
+  item.name.toLowerCase().includes('timer') ||
+  item.name.toLowerCase().includes('cronômetro') ||
+  item.name.toLowerCase().includes('kanban') ||     // ← NOVO: Kanban
+  item.name.toLowerCase().includes('board') ||      // ← NOVO: Board
+  item.name.toLowerCase().includes('quadro') ||     // ← NOVO: Quadro
+  item.name.toLowerCase().includes('projeto') ||    // ← NOVO: Projeto
+  item.name.toLowerCase().includes('painel')        // ← NOVO: Painel
   
-  // Debug rápido para verificar o ID
-  if (item.name.includes('Tarefas') || item.name.includes('To-Do') || item.name.includes('Pomodoro')) {
-    console.log('🔍 Ferramenta interativa detectada:', { 
+  // Debug melhorado para verificar detecção
+  if (item.name.toLowerCase().includes('kanban') || 
+      item.name.toLowerCase().includes('board') || 
+      item.name.toLowerCase().includes('projeto')) {
+    console.log('🎯 Ferramenta Kanban detectada:', { 
       id: item.id, 
       name: item.name,
       isInteractive: isInteractiveTool,
-      matchById: ['todo-list', 'todo-advanced', 'task-manager', 'pomodoro-timer'].includes(item.id),
-      matchByName: item.name.includes('Lista de Tarefas') || item.name.includes('To-Do') || item.name.includes('Pomodoro')
+      matchById: ['kanban-board', 'kanban-tool', 'project-board'].includes(item.id),
+      matchByName: item.name.toLowerCase().includes('kanban') || 
+                   item.name.toLowerCase().includes('board') || 
+                   item.name.toLowerCase().includes('projeto')
     })
   }
+
+  // Função para determinar o tipo de ferramenta para ícones e textos
+  const getToolType = () => {
+    const toolName = item.name.toLowerCase()
+    const toolId = item.id.toLowerCase()
+    
+    if (toolId.includes('kanban') || toolName.includes('kanban') || 
+        toolId.includes('board') || toolName.includes('board') ||
+        toolName.includes('quadro') || toolName.includes('projeto')) {
+      return {
+        type: 'kanban',
+        icon: '📋',
+        label: 'Abrir Kanban Board',
+        description: 'Gerencie projetos visualmente com quadros Kanban'
+      }
+    }
+    
+    if (toolId.includes('todo') || toolName.includes('todo') || 
+        toolName.includes('tarefa') || toolName.includes('lista')) {
+      return {
+        type: 'todo',
+        icon: '✅',
+        label: 'Abrir Lista de Tarefas',
+        description: 'Organize suas tarefas diárias'
+      }
+    }
+    
+    if (toolId.includes('pomodoro') || toolName.includes('pomodoro') || 
+        toolName.includes('timer') || toolName.includes('cronômetro')) {
+      return {
+        type: 'pomodoro',
+        icon: '🍅',
+        label: 'Abrir Pomodoro Timer',
+        description: 'Técnica de foco e produtividade'
+      }
+    }
+    
+    return {
+      type: 'generic',
+      icon: '🚀',
+      label: 'Usar Ferramenta',
+      description: 'Abrir interface da ferramenta'
+    }
+  }
+
+  const toolInfo = getToolType()
 
   return (
     <div 
@@ -124,16 +193,18 @@ export default function ItemDetailModal({
             {isInteractiveTool ? (
               <button 
                 onClick={handleUseTool}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white font-medium py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white font-medium py-3 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
               >
-                🚀 Usar Ferramenta
+                <span className="text-lg">{toolInfo.icon}</span>
+                {toolInfo.label}
               </button>
             ) : (
               <button 
-                className="flex-1 bg-theme-hover hover:bg-theme-soft text-theme-primary font-medium py-3 px-4 rounded-xl transition-all border border-theme-soft cursor-not-allowed"
+                className="flex-1 bg-theme-hover hover:bg-theme-soft text-theme-primary font-medium py-3 px-4 rounded-xl transition-all border border-theme-soft cursor-not-allowed flex items-center justify-center gap-2"
                 disabled
               >
-                📋 Ferramenta Passiva
+                <span className="text-lg">📋</span>
+                Ferramenta Passiva
               </button>
             )}
             
@@ -145,20 +216,33 @@ export default function ItemDetailModal({
             </button>
           </div>
 
-          {/* Dicas de uso */}
+          {/* Dicas de uso melhoradas */}
           {isInteractiveTool && (
             <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-xs text-blue-700 dark:text-blue-400 text-center">
-                💡 <strong>Dica:</strong> Clique em "Usar Ferramenta" para abrir a interface completa desta ferramenta.
+                <span className="text-lg mr-1">{toolInfo.icon}</span>
+                <strong>Dica:</strong> {toolInfo.description}. Clique em "{toolInfo.label}" para começar!
               </p>
             </div>
           )}
           
-          {/* Debug temporário para identificar problema */}
-          {!isInteractiveTool && (item.name.includes('Tarefas') || item.name.includes('To-Do') || item.name.includes('Pomodoro')) && (
+          {/* Debug temporário melhorado */}
+          {!isInteractiveTool && (
+            item.name.toLowerCase().includes('kanban') || 
+            item.name.toLowerCase().includes('board') || 
+            item.name.toLowerCase().includes('projeto') ||
+            item.name.toLowerCase().includes('tarefas') || 
+            item.name.toLowerCase().includes('to-do') || 
+            item.name.toLowerCase().includes('pomodoro')
+          ) && (
             <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-xs text-red-700 dark:text-red-400 text-center">
-                🔧 <strong>Debug:</strong> ID atual: {item.id} (deveria ser: todo-list ou pomodoro-timer)
+                🔧 <strong>Debug:</strong> ID: "{item.id}" | Nome: "{item.name}" 
+                <br />
+                <span className="text-xs opacity-75">
+                  {item.id.includes('kanban') ? '✅ ID contém kanban' : '❌ ID não contém kanban'} | 
+                  {item.name.toLowerCase().includes('kanban') ? '✅ Nome contém kanban' : '❌ Nome não contém kanban'}
+                </span>
               </p>
             </div>
           )}
