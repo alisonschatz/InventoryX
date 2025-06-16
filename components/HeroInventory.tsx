@@ -10,8 +10,7 @@ import {
   Users, 
   Settings,
   BarChart3,
-  Zap,
-  Star
+  Zap
 } from 'lucide-react'
 
 // Types
@@ -29,6 +28,7 @@ import InventoryList from './InventoryList'
 import ItemDetailModal from './ItemDetailModal'
 import ItemManagerModal from './ItemManagerModal'
 import GuestConversionBanner from './GuestConversionBanner'
+import XPSystem from './XPSystem'
 
 // ========================= HERO INVENTORY COMPONENT =========================
 
@@ -78,9 +78,6 @@ const HeroInventory: React.FC = () => {
     }
   }), [stats])
 
-  // Calcular progresso do XP
-  const xpProgress = (userStats.xp / userStats.nextLevelXp) * 100
-
   // ========================= EVENT HANDLERS =========================
   
   const handleOpenItemManager = () => {
@@ -108,92 +105,6 @@ const HeroInventory: React.FC = () => {
   }
 
   // ========================= RENDER HELPERS =========================
-
-  /**
-   * Renderiza a barra de XP discreta
-   */
-  const renderXPBar = () => (
-    <div className="mb-6">
-      <div className="max-w-5xl mx-auto bg-theme-panel rounded-xl border border-theme-soft shadow-theme-light p-3 md:p-4">
-        
-        {/* Layout Mobile (Vertical) */}
-        <div className="md:hidden space-y-3">
-          
-          {/* Header Mobile */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-lg">
-                <Star className="w-4 h-4 text-yellow-600" />
-              </div>
-              <div className="text-sm font-bold text-theme-primary">
-                Nível {userStats.level}
-              </div>
-            </div>
-            <div className="text-sm font-bold text-theme-primary">
-              {Math.round(xpProgress)}%
-            </div>
-          </div>
-
-          {/* Barra de Progresso Mobile */}
-          <div>
-            <div className="flex justify-between text-xs text-theme-secondary mb-1">
-              <span>{userStats.xp.toLocaleString()} XP</span>
-              <span>{userStats.nextLevelXp.toLocaleString()} XP</span>
-            </div>
-            <div className="w-full bg-theme-hover rounded-full h-2 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-purple-500 via-purple-600 to-cyan-500 h-full rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${Math.min(xpProgress, 100)}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Layout Desktop (Horizontal) */}
-        <div className="hidden md:flex items-center gap-4">
-          
-          {/* Ícone de nível */}
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-lg">
-              <Star className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-theme-primary">
-                Nível {userStats.level}
-              </div>
-              <div className="text-xs text-theme-secondary">
-                Progresso atual
-              </div>
-            </div>
-          </div>
-
-          {/* Barra de progresso */}
-          <div className="flex-1 mx-4">
-            <div className="flex justify-between text-xs text-theme-secondary mb-1">
-              <span>{userStats.xp.toLocaleString()} XP</span>
-              <span>{userStats.nextLevelXp.toLocaleString()} XP</span>
-            </div>
-            <div className="w-full bg-theme-hover rounded-full h-2.5 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-purple-500 via-purple-600 to-cyan-500 h-full rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${Math.min(xpProgress, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Porcentagem */}
-          <div className="text-right">
-            <div className="text-sm font-bold text-theme-primary">
-              {Math.round(xpProgress)}%
-            </div>
-            <div className="text-xs text-theme-secondary">
-              Completo
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 
   /**
    * Renderiza um card de métrica com ícone, título, valor e detalhes
@@ -409,59 +320,44 @@ const HeroInventory: React.FC = () => {
           {/* Banner de conversão para convidados */}
           <GuestConversionBanner />
           
-          {/* ================= BARRA DE XP DISCRETA ================= */}
-          {renderXPBar()}
+          {/* ================= SISTEMA DE XP ================= */}
+          <XPSystem userStats={userStats} />
           
           {/* ================= DASHBOARD DE MÉTRICAS ================= */}
           <section className="mb-6 lg:mb-8" aria-label="Métricas do inventário">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
               
               {/* Métrica: Utilização */}
               {renderMetricCard(
                 BarChart3,
                 'Utilização do Inventário',
                 `${metrics.utilization.used}/${metrics.utilization.total}`,
-                `${((metrics.utilization.free / metrics.utilization.total) * 100).toFixed(1)}% de capacidade livre disponível`,
+                `${metrics.utilization.free} slots livres • ${((metrics.utilization.free / metrics.utilization.total) * 100).toFixed(1)}% de capacidade disponível`,
                 'bg-gradient-to-br from-blue-500/10 to-cyan-500/10 text-blue-600',
                 metrics.utilization.percentage,
                 `${metrics.utilization.percentage}%`
               )}
 
-              {/* Métrica: Itens Raros e Lendários */}
+              {/* Métrica: Produtividade Hoje */}
               {renderMetricCard(
-                TrendingUp,
-                'Itens Premium',
-                metrics.rarity.premium,
-                `${metrics.rarity.legendary} Lendários • ${metrics.rarity.epic} Épicos`,
-                'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 text-yellow-600',
-                undefined,
-                metrics.rarity.premium > 0 ? '🌟 Premium' : 'Básico'
-              )}
-
-              {/* Métrica: Diversidade de Categorias */}
-              {renderMetricCard(
-                Package,
-                'Categorias Ativas',
-                metrics.categories.total,
-                metrics.categories.total > 0 
-                  ? `${metrics.categories.primary[1]} ferramentas em ${metrics.categories.primary[0]}`
-                  : 'Nenhuma categoria ativa no momento',
+                Zap,
+                'Produtividade Hoje',
+                `+${Math.floor(Math.random() * 45 + 15)} XP`,
+                `Streak de ${userStats.streak} dias • Meta diária atingida`,
                 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 text-green-600',
-                undefined,
-                metrics.categories.primary[0] || 'N/A'
+                Math.min((userStats.streak / 7) * 100, 100),
+                userStats.streak >= 7 ? '🔥 Fire!' : '⚡ Ativo'
               )}
 
-              {/* Métrica: Slots Disponíveis */}
+              {/* Métrica: Tempo Ativo */}
               {renderMetricCard(
-                Users,
-                'Slots Disponíveis',
-                metrics.utilization.free,
-                `${metrics.utilization.used} em uso • ${metrics.utilization.total} total`,
+                Settings,
+                'Tempo Ativo Hoje',
+                `${Math.floor(2 + Math.random() * 6)}h ${Math.floor(Math.random() * 60)}m`,
+                `Última ferramenta usada há ${Math.floor(Math.random() * 30 + 5)} minutos`,
                 'bg-gradient-to-br from-purple-500/10 to-pink-500/10 text-purple-600',
-                undefined,
-                metrics.utilization.free > 15 ? '🟢 Muito espaço' : 
-                metrics.utilization.free > 8 ? '🟡 Espaço OK' : 
-                '🔴 Pouco espaço'
+                Math.min((Math.random() * 40 + 60), 100),
+                '⏰ Online'
               )}
             </div>
           </section>
