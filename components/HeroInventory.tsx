@@ -1,13 +1,7 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
-import { 
-  Package, 
-  Plus, 
-  Grid3X3, 
-  List, 
-  Settings
-} from 'lucide-react'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Package, Plus, Grid3X3, List, Settings } from 'lucide-react'
 
 // Types
 import { UserStats, ViewMode } from '@/types/interfaces'
@@ -16,6 +10,7 @@ import { UserStats, ViewMode } from '@/types/interfaces'
 import { useInventory } from '@/hooks/useInventory'
 import { useAtmosphere } from '@/hooks/useAtmosphere'
 import { useTodo } from '@/hooks/useTodo'
+import { usePomodoro } from '@/hooks/usePomodoro'
 
 // Components
 import Header from './Header'
@@ -28,8 +23,9 @@ import GuestConversionBanner from './GuestConversionBanner'
 import XPSystem from './XPSystem'
 import MetricsDashboard from './MetricsDashboard'
 import TodoTool from './TodoTool'
+import PomodoroTool from './PomodoroTool'
 
-// ========================= HERO INVENTORY COMPONENT =========================
+// ========================= MAIN COMPONENT =========================
 
 const HeroInventory: React.FC = () => {
   // ========================= HOOKS =========================
@@ -37,80 +33,91 @@ const HeroInventory: React.FC = () => {
   const inventory = useInventory()
   const atmosphere = useAtmosphere()
   const todo = useTodo()
+  const pomodoro = usePomodoro()
 
   // ========================= LOCAL STATE =========================
   
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
 
-  // ========================= MOCK DATA =========================
+  // ========================= USER STATS =========================
   
-  const userStats: UserStats = {
+  const userStats: UserStats = useMemo(() => ({
     level: 12,
     xp: 2840,
     nextLevelXp: 3000,
     streak: 7,
     totalTools: inventory.activeTools.length,
     favoriteCategory: inventory.inventoryStats.categories[0]?.[0] || 'Produtividade'
-  }
+  }), [inventory.activeTools.length, inventory.inventoryStats.categories])
 
-  // ========================= ENSURE TODO TOOL EXISTS =========================
+  // ========================= INVENTORY METRICS =========================
   
-  // Garantir que a ferramenta To-Do existe no inventário para teste
-  React.useEffect(() => {
-    const todoTool = {
-      id: 'todo-list', // ← ESTE É O ID IMPORTANTE!
-      name: 'Lista de Tarefas',
-      icon: '✅',
-      category: 'Produtividade',
-      rarity: 'common' as const,
-      slot: 0,
-      description: 'Organize suas tarefas diárias e acompanhe seu progresso. Gerencie prioridades, categorias e prazos de forma eficiente.',
-      isActive: true
+  const metrics = useMemo(() => {
+    const stats = inventory.inventoryStats
+    
+    return {
+      utilization: {
+        used: stats.usedSlots,
+        total: stats.totalSlots,
+        free: stats.emptySlots,
+        percentage: stats.usagePercentage
+      },
+      rarity: {
+        legendary: stats.rarityCount.legendary,
+        epic: stats.rarityCount.epic,
+        rare: stats.rarityCount.rare,
+        common: stats.rarityCount.common,
+        premium: stats.rarityCount.legendary + stats.rarityCount.epic
+      },
+      categories: {
+        total: stats.categories.length,
+        primary: stats.categories[0] || ['Nenhuma', 0],
+        distribution: stats.categories
+      }
     }
+  }, [inventory.inventoryStats])
 
-    // Log para debug
-    console.log('🔧 Criando ferramenta To-Do com ID:', todoTool.id)
-
-    // Verificar se o slot 0 está vazio ou não tem a ferramenta To-Do
-    if (!inventory.inventorySlots[0] || inventory.inventorySlots[0]?.id !== 'todo-list') {
-      console.log('🔧 Adicionando ferramenta To-Do ao slot 0 para teste...')
-      inventory.addTool(todoTool, 0)
-      
-      // Verificar se foi adicionada corretamente
-      setTimeout(() => {
-        const addedTool = inventory.inventorySlots[0]
-        console.log('✅ Ferramenta adicionada no slot 0:', addedTool)
-        console.log('🆔 ID da ferramenta:', addedTool?.id)
-      }, 100)
-    } else {
-      console.log('✅ Ferramenta To-Do já existe no slot 0:', inventory.inventorySlots[0])
-    }
-  }, []) // Executar apenas uma vez
-
-  // ========================= COMPUTED VALUES =========================
+  // ========================= SETUP DEFAULT TOOLS =========================
   
-  const stats = inventory.inventoryStats
-  
-  const metrics = useMemo(() => ({
-    utilization: {
-      used: stats.usedSlots,
-      total: stats.totalSlots,
-      free: stats.emptySlots,
-      percentage: stats.usagePercentage
-    },
-    rarity: {
-      legendary: stats.rarityCount.legendary,
-      epic: stats.rarityCount.epic,
-      rare: stats.rarityCount.rare,
-      common: stats.rarityCount.common,
-      premium: stats.rarityCount.legendary + stats.rarityCount.epic
-    },
-    categories: {
-      total: stats.categories.length,
-      primary: stats.categories[0] || ['Nenhuma', 0],
-      distribution: stats.categories
-    }
-  }), [stats])
+  useEffect(() => {
+    // Aguardar hooks estarem prontos
+    if (!inventory?.addTool || !inventory?.inventorySlots) return
+
+    const defaultTools = [
+      {
+        id: 'todo-list',
+        name: 'Lista de Tarefas',
+        icon: '✅',
+        category: 'Produtividade',
+        rarity: 'common' as const,
+        slot: 0,
+        description: 'Organize suas tarefas diárias e acompanhe seu progresso. Gerencie prioridades, categorias e prazos de forma eficiente.',
+        isActive: true
+      },
+      {
+        id: 'pomodoro-timer',
+        name: 'Pomodoro Timer',
+        icon: '🍅',
+        category: 'Produtividade',
+        rarity: 'rare' as const,
+        slot: 1,
+        description: 'Técnica Pomodoro para aumentar foco e produtividade com sessões cronometradas de trabalho e pausas.',
+        isActive: true
+      }
+    ]
+
+    // Adicionar ferramentas padrão se não existirem
+    defaultTools.forEach((tool, index) => {
+      const currentSlot = inventory.inventorySlots[index]
+      const needsCorrection = !currentSlot || 
+                             currentSlot.id !== tool.id || 
+                             !currentSlot.name.includes(tool.name.split(' ')[0])
+
+      if (needsCorrection) {
+        inventory.addTool(tool, index)
+      }
+    })
+  }, [inventory?.addTool, inventory?.inventorySlots])
 
   // ========================= EVENT HANDLERS =========================
   
@@ -127,7 +134,13 @@ const HeroInventory: React.FC = () => {
   }
 
   const handleResetInventory = () => {
-    const confirmed = confirm('⚠️ Tem certeza que deseja resetar o inventário?\n\nEsta ação irá:\n• Remover todas as ferramentas atuais\n• Restaurar apenas as 3 ferramentas padrão\n• Não pode ser desfeita')
+    const confirmed = confirm(
+      '⚠️ Tem certeza que deseja resetar o inventário?\n\n' +
+      'Esta ação irá:\n' +
+      '• Remover todas as ferramentas atuais\n' +
+      '• Restaurar apenas as 3 ferramentas padrão\n' +
+      '• Não pode ser desfeita'
+    )
     
     if (confirmed) {
       inventory.resetToDefault()
@@ -138,16 +151,48 @@ const HeroInventory: React.FC = () => {
     setViewMode(mode)
   }
 
+  const handleOpenTool = (toolId: string) => {
+    // Identificar e abrir a ferramenta correta
+    const toolMatchers = {
+      todo: ['todo-list', 'todo-advanced', 'task-manager'],
+      pomodoro: ['pomodoro-timer', 'pomodoro-tool', 'timer']
+    }
+
+    const searchInSlots = (keywords: string[]) => {
+      return inventory.inventorySlots.find(slot => 
+        slot?.id === toolId && keywords.some(keyword => 
+          slot.name.toLowerCase().includes(keyword.toLowerCase())
+        )
+      )
+    }
+
+    // Verificar To-Do
+    const isTodoTool = toolMatchers.todo.includes(toolId) ||
+                     toolId.includes('todo') ||
+                     searchInSlots(['tarefas', 'to-do', 'task'])
+
+    // Verificar Pomodoro  
+    const isPomodoroTool = toolMatchers.pomodoro.includes(toolId) ||
+                         toolId.includes('pomodoro') ||
+                         searchInSlots(['pomodoro', 'timer', 'cronômetro'])
+
+    if (isTodoTool) {
+      todo.openTodo()
+    } else if (isPomodoroTool) {
+      pomodoro.openPomodoro()
+    }
+
+    // Fechar modal de detalhes
+    handleCloseItemDetail()
+  }
+
   // ========================= RENDER HELPERS =========================
 
-  /**
-   * Renderiza o header do inventário com controles
-   */
   const renderInventoryHeader = () => (
     <div className="bg-theme-panel rounded-t-xl border border-b-0 border-theme-soft p-4 lg:p-6 shadow-theme-light">
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         
-        {/* Seção do título */}
+        {/* Título */}
         <div className="space-y-1">
           <h2 className="text-xl lg:text-2xl xl:text-3xl font-bold text-theme-primary flex items-center gap-3">
             <Package className="w-6 h-6 lg:w-7 lg:h-7 text-purple-500" />
@@ -158,69 +203,58 @@ const HeroInventory: React.FC = () => {
           </p>
         </div>
         
-        {/* Seção de controles */}
+        {/* Controles */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 lg:gap-4">
           
-          {/* Controles de ação */}
-          <div className="flex items-center gap-2">
-            
-            {/* Toggle de visualização */}
-            <div className="flex items-center bg-theme-hover rounded-lg p-1 border border-theme-soft">
-              <button
-                onClick={() => handleViewModeChange('grid')}
-                className={`p-2 rounded-md transition-all duration-200 ${
-                  viewMode === 'grid' 
-                    ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm' 
-                    : 'text-theme-secondary hover:text-theme-primary hover:bg-theme-soft'
-                }`}
-                title="Visualização em grade"
-                aria-label="Mudar para visualização em grade"
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              
-              <button
-                onClick={() => handleViewModeChange('list')}
-                className={`p-2 rounded-md transition-all duration-200 ${
-                  viewMode === 'list' 
-                    ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm' 
-                    : 'text-theme-secondary hover:text-theme-primary hover:bg-theme-soft'
-                }`}
-                title="Visualização em lista"
-                aria-label="Mudar para visualização em lista"
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Botão gerenciar ferramentas */}
+          {/* Toggle de visualização */}
+          <div className="flex items-center bg-theme-hover rounded-lg p-1 border border-theme-soft">
             <button
-              onClick={handleOpenItemManager}
-              className="flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
-              aria-label="Abrir gerenciador de ferramentas"
+              onClick={() => handleViewModeChange('grid')}
+              className={`p-2 rounded-md transition-all duration-200 ${
+                viewMode === 'grid' 
+                  ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm' 
+                  : 'text-theme-secondary hover:text-theme-primary hover:bg-theme-soft'
+              }`}
+              title="Visualização em grade"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline text-sm lg:text-base">Gerenciar</span>
+              <Grid3X3 className="w-4 h-4" />
             </button>
-
-            {/* Botão configurações */}
+            
             <button
-              onClick={handleResetInventory}
-              className="p-2 lg:p-2.5 text-theme-secondary hover:text-theme-primary hover:bg-theme-hover rounded-lg transition-all duration-200 border border-theme-soft hover:border-theme-primary"
-              title="Resetar inventário"
-              aria-label="Resetar inventário para configuração padrão"
+              onClick={() => handleViewModeChange('list')}
+              className={`p-2 rounded-md transition-all duration-200 ${
+                viewMode === 'list' 
+                  ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm' 
+                  : 'text-theme-secondary hover:text-theme-primary hover:bg-theme-soft'
+              }`}
+              title="Visualização em lista"
             >
-              <Settings className="w-4 h-4" />
+              <List className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Botão gerenciar */}
+          <button
+            onClick={handleOpenItemManager}
+            className="flex items-center gap-2 px-3 lg:px-4 py-2 lg:py-2.5 bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline text-sm lg:text-base">Gerenciar</span>
+          </button>
+
+          {/* Botão reset */}
+          <button
+            onClick={handleResetInventory}
+            className="p-2 lg:p-2.5 text-theme-secondary hover:text-theme-primary hover:bg-theme-hover rounded-lg transition-all duration-200 border border-theme-soft hover:border-theme-primary"
+            title="Resetar inventário"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
   )
 
-  /**
-   * Renderiza o conteúdo do inventário baseado no modo de visualização
-   */
   const renderInventoryContent = () => (
     <div className="bg-theme-panel rounded-b-xl border border-theme-soft shadow-theme-light">
       <div className="p-3 lg:p-6">
@@ -253,7 +287,7 @@ const HeroInventory: React.FC = () => {
   return (
     <div className="min-h-screen bg-theme-primary flex flex-col">
       
-      {/* ===================== HEADER GLOBAL ===================== */}
+      {/* Header Global */}
       <Header
         userStats={userStats}
         toolsCount={metrics.utilization.used}
@@ -265,7 +299,7 @@ const HeroInventory: React.FC = () => {
         setIsPlaying={atmosphere.setIsPlaying}
       />
 
-      {/* ===================== ATMOSPHERE PANEL ===================== */}
+      {/* Painel de Atmosfera */}
       <AtmospherePanel
         atmosphereOpen={atmosphere.atmosphereOpen}
         setAtmosphereOpen={atmosphere.setAtmosphereOpen}
@@ -281,23 +315,23 @@ const HeroInventory: React.FC = () => {
         clearCurrentTrack={atmosphere.clearCurrentTrack}
       />
 
-      {/* ===================== MAIN CONTENT ===================== */}
+      {/* Conteúdo Principal */}
       <main className="flex-1 w-full bg-theme-primary">
         <div className="max-w-7xl mx-auto px-4 py-6">
           
-          {/* Banner de conversão para convidados */}
+          {/* Banner de Conversão */}
           <GuestConversionBanner />
           
-          {/* ================= SISTEMA DE XP ================= */}
+          {/* Sistema de XP */}
           <XPSystem userStats={userStats} />
           
-          {/* ================= DASHBOARD DE MÉTRICAS ================= */}
+          {/* Dashboard de Métricas */}
           <MetricsDashboard 
             userStats={userStats}
             utilizationData={metrics.utilization}
           />
 
-          {/* ================= SEÇÃO DO INVENTÁRIO ================= */}
+          {/* Seção do Inventário */}
           <section className="space-y-0" aria-label="Inventário de ferramentas">
             {renderInventoryHeader()}
             {renderInventoryContent()}
@@ -305,30 +339,17 @@ const HeroInventory: React.FC = () => {
         </div>
       </main>
 
-      {/* ===================== MODALS E FERRAMENTAS ===================== */}
+      {/* Modais e Ferramentas */}
       
-      {/* Modal de detalhes da ferramenta */}
+      {/* Modal de Detalhes */}
       <ItemDetailModal
         selectedSlot={inventory.selectedSlot}
         inventorySlots={inventory.inventorySlots}
         setSelectedSlot={handleCloseItemDetail}
-        onOpenTool={(toolId: string) => {
-          // Aceitar tanto por ID quanto buscar por nome se for To-Do relacionado
-          const isTodoTool = toolId === 'todo-list' || 
-                           toolId.includes('todo') || 
-                           inventory.inventorySlots.find(slot => 
-                             slot?.id === toolId && 
-                             (slot.name.includes('Lista de Tarefas') || slot.name.includes('To-Do'))
-                           )
-          
-          if (isTodoTool) {
-            todo.openTodo()
-            handleCloseItemDetail()
-          }
-        }}
+        onOpenTool={handleOpenTool}
       />
 
-      {/* Modal de gerenciamento de ferramentas */}
+      {/* Modal de Gerenciamento */}
       <ItemManagerModal
         isOpen={inventory.itemManagerOpen}
         onClose={handleCloseItemManager}
@@ -338,12 +359,15 @@ const HeroInventory: React.FC = () => {
         inventorySlots={inventory.inventorySlots}
       />
 
-      {/* ===================== FERRAMENTAS ===================== */}
-      
-      {/* Ferramenta To-Do */}
+      {/* Ferramentas */}
       <TodoTool
         isOpen={todo.isTodoOpen}
         onClose={todo.closeTodo}
+      />
+      
+      <PomodoroTool
+        isOpen={pomodoro.isPomodoroOpen}
+        onClose={pomodoro.closePomodoro}
       />
     </div>
   )

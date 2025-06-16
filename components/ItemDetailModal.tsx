@@ -49,18 +49,20 @@ export default function ItemDetailModal({
   }
 
   // Verificar se a ferramenta é interativa
-  const isInteractiveTool = ['todo-list', 'todo-advanced', 'task-manager'].includes(item.id) || 
+  const isInteractiveTool = ['todo-list', 'todo-advanced', 'task-manager', 'pomodoro-timer'].includes(item.id) || 
                            item.name.includes('Lista de Tarefas') || 
-                           item.name.includes('To-Do')
+                           item.name.includes('To-Do') ||
+                           item.name.includes('Pomodoro') ||
+                           item.name.includes('Timer')
   
   // Debug rápido para verificar o ID
-  if (item.name.includes('Tarefas') || item.name.includes('To-Do')) {
-    console.log('🔍 Ferramenta To-Do detectada:', { 
+  if (item.name.includes('Tarefas') || item.name.includes('To-Do') || item.name.includes('Pomodoro')) {
+    console.log('🔍 Ferramenta interativa detectada:', { 
       id: item.id, 
       name: item.name,
       isInteractive: isInteractiveTool,
-      matchById: ['todo-list', 'todo-advanced', 'task-manager'].includes(item.id),
-      matchByName: item.name.includes('Lista de Tarefas') || item.name.includes('To-Do')
+      matchById: ['todo-list', 'todo-advanced', 'task-manager', 'pomodoro-timer'].includes(item.id),
+      matchByName: item.name.includes('Lista de Tarefas') || item.name.includes('To-Do') || item.name.includes('Pomodoro')
     })
   }
 
@@ -153,10 +155,10 @@ export default function ItemDetailModal({
           )}
           
           {/* Debug temporário para identificar problema */}
-          {!isInteractiveTool && (item.name.includes('Tarefas') || item.name.includes('To-Do')) && (
+          {!isInteractiveTool && (item.name.includes('Tarefas') || item.name.includes('To-Do') || item.name.includes('Pomodoro')) && (
             <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-xs text-red-700 dark:text-red-400 text-center">
-                🔧 <strong>Debug:</strong> ID atual: {item.id} (deveria ser: todo-list)
+                🔧 <strong>Debug:</strong> ID atual: {item.id} (deveria ser: todo-list ou pomodoro-timer)
               </p>
             </div>
           )}
