@@ -15,6 +15,7 @@ import { UserStats, ViewMode } from '@/types/interfaces'
 // Hooks
 import { useInventory } from '@/hooks/useInventory'
 import { useAtmosphere } from '@/hooks/useAtmosphere'
+import { useTodo } from '@/hooks/useTodo'
 
 // Components
 import Header from './Header'
@@ -26,6 +27,7 @@ import ItemManagerModal from './ItemManagerModal'
 import GuestConversionBanner from './GuestConversionBanner'
 import XPSystem from './XPSystem'
 import MetricsDashboard from './MetricsDashboard'
+import TodoTool from './TodoTool'
 
 // ========================= HERO INVENTORY COMPONENT =========================
 
@@ -34,6 +36,7 @@ const HeroInventory: React.FC = () => {
   
   const inventory = useInventory()
   const atmosphere = useAtmosphere()
+  const todo = useTodo()
 
   // ========================= LOCAL STATE =========================
   
@@ -49,6 +52,40 @@ const HeroInventory: React.FC = () => {
     totalTools: inventory.activeTools.length,
     favoriteCategory: inventory.inventoryStats.categories[0]?.[0] || 'Produtividade'
   }
+
+  // ========================= ENSURE TODO TOOL EXISTS =========================
+  
+  // Garantir que a ferramenta To-Do existe no inventário para teste
+  React.useEffect(() => {
+    const todoTool = {
+      id: 'todo-list', // ← ESTE É O ID IMPORTANTE!
+      name: 'Lista de Tarefas',
+      icon: '✅',
+      category: 'Produtividade',
+      rarity: 'common' as const,
+      slot: 0,
+      description: 'Organize suas tarefas diárias e acompanhe seu progresso. Gerencie prioridades, categorias e prazos de forma eficiente.',
+      isActive: true
+    }
+
+    // Log para debug
+    console.log('🔧 Criando ferramenta To-Do com ID:', todoTool.id)
+
+    // Verificar se o slot 0 está vazio ou não tem a ferramenta To-Do
+    if (!inventory.inventorySlots[0] || inventory.inventorySlots[0]?.id !== 'todo-list') {
+      console.log('🔧 Adicionando ferramenta To-Do ao slot 0 para teste...')
+      inventory.addTool(todoTool, 0)
+      
+      // Verificar se foi adicionada corretamente
+      setTimeout(() => {
+        const addedTool = inventory.inventorySlots[0]
+        console.log('✅ Ferramenta adicionada no slot 0:', addedTool)
+        console.log('🆔 ID da ferramenta:', addedTool?.id)
+      }, 100)
+    } else {
+      console.log('✅ Ferramenta To-Do já existe no slot 0:', inventory.inventorySlots[0])
+    }
+  }, []) // Executar apenas uma vez
 
   // ========================= COMPUTED VALUES =========================
   
@@ -268,13 +305,27 @@ const HeroInventory: React.FC = () => {
         </div>
       </main>
 
-      {/* ===================== MODALS ===================== */}
+      {/* ===================== MODALS E FERRAMENTAS ===================== */}
       
       {/* Modal de detalhes da ferramenta */}
       <ItemDetailModal
         selectedSlot={inventory.selectedSlot}
         inventorySlots={inventory.inventorySlots}
         setSelectedSlot={handleCloseItemDetail}
+        onOpenTool={(toolId: string) => {
+          // Aceitar tanto por ID quanto buscar por nome se for To-Do relacionado
+          const isTodoTool = toolId === 'todo-list' || 
+                           toolId.includes('todo') || 
+                           inventory.inventorySlots.find(slot => 
+                             slot?.id === toolId && 
+                             (slot.name.includes('Lista de Tarefas') || slot.name.includes('To-Do'))
+                           )
+          
+          if (isTodoTool) {
+            todo.openTodo()
+            handleCloseItemDetail()
+          }
+        }}
       />
 
       {/* Modal de gerenciamento de ferramentas */}
@@ -285,6 +336,14 @@ const HeroInventory: React.FC = () => {
         onAddItem={inventory.addTool}
         onRemoveItem={inventory.removeTool}
         inventorySlots={inventory.inventorySlots}
+      />
+
+      {/* ===================== FERRAMENTAS ===================== */}
+      
+      {/* Ferramenta To-Do */}
+      <TodoTool
+        isOpen={todo.isTodoOpen}
+        onClose={todo.closeTodo}
       />
     </div>
   )
