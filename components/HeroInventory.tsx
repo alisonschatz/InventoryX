@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
-import { Package, Plus, Grid3X3, List, Settings } from 'lucide-react'
+import { Package, Plus, Grid3X3, List, Settings, Cloud } from 'lucide-react'
 
 // ========================= TYPES =========================
 
@@ -29,6 +29,7 @@ import MetricsDashboard from './MetricsDashboard'
 import TodoTool from './TodoTool'
 import PomodoroTool from './PomodoroTool'
 import KanbanTool from './KanbanTool'
+import SyncStatusIndicator from './SyncStatusIndicator'
 import Footer from './Footer'
 
 // ========================= MAIN COMPONENT =========================
@@ -93,6 +94,12 @@ const HeroInventory: React.FC = () => {
       return
     }
 
+    // Não fazer setup automático se ainda estiver inicializando ou carregando
+    if (inventory.isInitializing || inventory.authLoading) {
+      console.log('⏳ Aguardando inicialização completa...')
+      return
+    }
+
     const defaultTools = [
       {
         id: 'todo-list',
@@ -126,19 +133,16 @@ const HeroInventory: React.FC = () => {
       }
     ]
 
-    // Verificar e adicionar ferramentas padrão se necessário
-    defaultTools.forEach((tool, index) => {
-      const currentSlot = inventory.inventorySlots[index]
-      const needsToAdd = !currentSlot || 
-                        currentSlot.id !== tool.id || 
-                        !currentSlot.name.includes(tool.name.split(' ')[0])
-
-      if (needsToAdd) {
-        console.log(`🔧 Adicionando ferramenta padrão: ${tool.name} no slot ${index}`)
+    // Verificar e adicionar ferramentas padrão se necessário (apenas se não houver NENHUMA ferramenta)
+    const hasAnyTools = inventory.inventorySlots.some(slot => slot !== null)
+    
+    if (!hasAnyTools) {
+      console.log('🔧 Configurando ferramentas padrão (inventário vazio)')
+      defaultTools.forEach((tool, index) => {
         inventory.addTool(tool, index)
-      }
-    })
-  }, [inventory?.addTool, inventory?.inventorySlots])
+      })
+    }
+  }, [inventory?.addTool, inventory?.inventorySlots, inventory?.isInitializing, inventory?.authLoading])
 
   // ========================= EVENT HANDLERS =========================
   
@@ -163,6 +167,7 @@ const HeroInventory: React.FC = () => {
       'Esta ação irá:\n' +
       '• Remover todas as ferramentas atuais\n' +
       '• Restaurar apenas as 3 ferramentas padrão\n' +
+      '• Salvar automaticamente no servidor\n' +
       '• Não pode ser desfeita\n\n' +
       'Deseja continuar?'
     )
@@ -322,13 +327,32 @@ const HeroInventory: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Status de Sincronização - Novo */}
+      <div className="mt-4 pt-4 border-t border-theme-soft">
+        <SyncStatusIndicator
+          syncState={inventory.syncState}
+          onManualSave={inventory.manualSave}
+          onClearError={inventory.clearSyncError}
+          enableAutoSave={inventory.enableAutoSave}
+          onToggleAutoSave={inventory.setEnableAutoSave}
+        />
+      </div>
     </div>
   )
 
   const renderInventoryContent = () => (
     <div className="bg-theme-panel rounded-b-xl border border-theme-soft shadow-theme-light">
       <div className="p-3 lg:p-6">
-        {viewMode === 'grid' ? (
+        {/* Loading State */}
+        {inventory.isInitializing ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-theme-secondary">Carregando inventário...</p>
+            </div>
+          </div>
+        ) : viewMode === 'grid' ? (
           <InventoryGrid
             inventorySlots={inventory.inventorySlots}
             selectedSlot={inventory.selectedSlot}

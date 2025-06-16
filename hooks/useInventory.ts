@@ -1,8 +1,11 @@
-// hooks/useInventory.ts
+// hooks/useInventory.ts - Atualizado com sincronização Firebase
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Tool, DraggedItem, InventoryStats, ViewMode } from '@/types/interfaces'
+import { useInventorySync } from './useInventorySync'
+import { useAuth } from '@/contexts/AuthContext'
+import debugService from '@/lib/debug'
 
 // ========================= CONSTANTS =========================
 
@@ -136,13 +139,18 @@ const createAvailableTools = (): Tool[] => [
 // ========================= INVENTORY HOOK =========================
 
 export const useInventory = () => {
+  // ========================= CONTEXTS =========================
+  
+  const { user, isGuestMode, loading: authLoading } = useAuth()
+  const { syncState, saveInventory: saveToFirebase, loadInventory: loadFromFirebase, forceSave, clearSyncError, enableAutoSave, setEnableAutoSave } = useInventorySync()
+
   // ========================= STATES =========================
   
   const [inventorySlots, setInventorySlots] = useState<(Tool | null)[]>(() => {
     const slots = new Array(TOTAL_SLOTS).fill(null)
     const defaultTools = createDefaultTools()
     
-    // Inserir ferramentas padrão nos primeiros slots
+    // Inserir ferramentas padrão nos primeiros slots (apenas inicialmente)
     defaultTools.forEach((tool, index) => {
       slots[index] = tool
     })
@@ -154,6 +162,76 @@ export const useInventory = () => {
   const [itemManagerOpen, setItemManagerOpen] = useState(false)
   const [draggedItem, setDraggedItem] = useState<DraggedItem | null>(null)
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  // ========================= EFFECTS =========================
+
+  // Carregar inventário do Firebase quando usuário logar
+  useEffect(() => {
+    const initializeInventory = async () => {
+      if (authLoading) return // Aguardar autenticação
+
+      setIsInitializing(true)
+
+      try {
+        if (user && !isGuestMode) {
+          debugService.info('firebase', 'Carregando inventário do usuário')
+          
+          const loadedInventory = await loadFromFirebase()
+          
+          if (loadedInventory && loadedInventory.length === TOTAL_SLOTS) {
+            debugService.success('firebase', 'Inventário carregado do Firestore')
+            setInventorySlots(loadedInventory)
+          } else {
+            debugService.info('firebase', 'Nenhum inventário salvo - usando padrão')
+            // Manter inventário padrão e salvar no Firebase
+            const defaultSlots = new Array(TOTAL_SLOTS).fill(null)
+            const defaultTools = createDefaultTools()
+            
+            defaultTools.forEach((tool, index) => {
+              defaultSlots[index] = tool
+            })
+            
+            setInventorySlots(defaultSlots)
+            await saveToFirebase(defaultSlots)
+          }
+        } else if (isGuestMode) {
+          debugService.info('guest', 'Modo convidado - usando localStorage')
+          // Para convidados, tentar carregar do localStorage
+          const savedGuest = localStorage.getItem('inventoryx-guest-inventory')
+          if (savedGuest) {
+            try {
+              const parsed = JSON.parse(savedGuest)
+              if (Array.isArray(parsed) && parsed.length === TOTAL_SLOTS) {
+                setInventorySlots(parsed)
+              }
+            } catch (error) {
+              debugService.error('guest', 'Erro ao carregar inventário do localStorage', error)
+            }
+          }
+        }
+      } catch (error) {
+        debugService.error('firebase', 'Erro ao inicializar inventário', error)
+      } finally {
+        setIsInitializing(false)
+      }
+    }
+
+    initializeInventory()
+  }, [user, isGuestMode, authLoading, loadFromFirebase, saveToFirebase])
+
+  // Auto-salvar mudanças no inventário
+  useEffect(() => {
+    if (isInitializing || authLoading) return
+
+    if (user && !isGuestMode) {
+      // Para usuários reais, salvar no Firebase
+      saveToFirebase(inventorySlots)
+    } else if (isGuestMode) {
+      // Para convidados, salvar no localStorage
+      localStorage.setItem('inventoryx-guest-inventory', JSON.stringify(inventorySlots))
+    }
+  }, [inventorySlots, user, isGuestMode, isInitializing, authLoading, saveToFirebase])
 
   // ========================= COMPUTED VALUES =========================
 
@@ -218,7 +296,7 @@ export const useInventory = () => {
 
     setDraggedItem(dragData)
     e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', '') // Para compatibilidade
+    e.dataTransfer.setData('text/plain', '')
   }, [inventorySlots])
 
   const handleDragEnd = useCallback(() => {
@@ -262,7 +340,7 @@ export const useInventory = () => {
     })
 
     // Log da ação
-    console.log(`🔄 Ferramenta ${draggedItem.item.name} movida do slot ${draggedItem.fromSlot + 1} para ${toSlot + 1}`)
+    debugService.info('firebase', `Ferramenta ${draggedItem.item.name} movida do slot ${draggedItem.fromSlot + 1} para ${toSlot + 1}`)
 
     setDraggedItem(null)
     setDragOverSlot(null)
@@ -272,7 +350,7 @@ export const useInventory = () => {
 
   const addTool = useCallback((tool: Tool, targetSlot: number): boolean => {
     if (inventorySlots[targetSlot] !== null) {
-      console.warn('🚫 Slot ocupado, não é possível adicionar ferramenta')
+      debugService.warning('firebase', 'Slot ocupado, não é possível adicionar ferramenta')
       return false
     }
 
@@ -289,14 +367,14 @@ export const useInventory = () => {
       return newSlots
     })
 
-    console.log(`✅ ${tool.name} adicionada ao slot ${targetSlot + 1}`)
+    debugService.success('firebase', `${tool.name} adicionada ao slot ${targetSlot + 1}`)
     return true
   }, [inventorySlots])
 
   const removeTool = useCallback((slotIndex: number): boolean => {
     const tool = inventorySlots[slotIndex]
     if (!tool) {
-      console.warn('🚫 Slot vazio, nada para remover')
+      debugService.warning('firebase', 'Slot vazio, nada para remover')
       return false
     }
 
@@ -306,14 +384,14 @@ export const useInventory = () => {
       return newSlots
     })
 
-    console.log(`🗑️ ${tool.name} removida do slot ${slotIndex + 1}`)
+    debugService.success('firebase', `${tool.name} removida do slot ${slotIndex + 1}`)
     return true
   }, [inventorySlots])
 
   const clearInventory = useCallback(() => {
     setInventorySlots(new Array(TOTAL_SLOTS).fill(null))
     setSelectedSlot(null)
-    console.log('🧹 Inventário completamente limpo')
+    debugService.info('firebase', 'Inventário completamente limpo')
   }, [])
 
   const resetToDefault = useCallback(() => {
@@ -326,7 +404,7 @@ export const useInventory = () => {
     
     setInventorySlots(slots)
     setSelectedSlot(null)
-    console.log('🔄 Inventário resetado para configuração padrão')
+    debugService.info('firebase', 'Inventário resetado para configuração padrão')
   }, [])
 
   const swapTools = useCallback((slotA: number, slotB: number): boolean => {
@@ -347,7 +425,7 @@ export const useInventory = () => {
       return newSlots
     })
 
-    console.log(`🔄 Ferramentas dos slots ${slotA + 1} e ${slotB + 1} trocadas`)
+    debugService.info('firebase', `Ferramentas dos slots ${slotA + 1} e ${slotB + 1} trocadas`)
     return true
   }, [])
 
@@ -401,6 +479,15 @@ export const useInventory = () => {
     )
   }, [activeTools])
 
+  // ========================= SYNC CONTROLS =========================
+
+  const manualSave = useCallback(async (): Promise<boolean> => {
+    if (user && !isGuestMode) {
+      return await forceSave()
+    }
+    return false
+  }, [user, isGuestMode, forceSave])
+
   // ========================= EXPORT =========================
 
   return {
@@ -410,6 +497,10 @@ export const useInventory = () => {
     setSelectedSlot,
     itemManagerOpen,
     setItemManagerOpen,
+
+    // Estados de carregamento
+    isInitializing,
+    authLoading,
 
     // Drag & Drop
     draggedItem,
@@ -442,6 +533,13 @@ export const useInventory = () => {
     getToolsByCategory,
     getToolsByRarity,
     searchTools,
+
+    // Sincronização
+    syncState,
+    manualSave,
+    clearSyncError,
+    enableAutoSave,
+    setEnableAutoSave,
 
     // Constantes
     TOTAL_SLOTS,
