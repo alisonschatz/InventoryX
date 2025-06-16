@@ -165,15 +165,141 @@ export default function AtmospherePanel({
 
   return (
     <div className="border-t bg-gradient-to-r from-purple-50/30 via-purple-100/30 to-cyan-50/30 dark:from-purple-900/5 dark:via-purple-900/10 dark:to-cyan-900/5">
-      <div className="max-w-5xl mx-auto px-4 py-3">
+      <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
         
-        {/* Layout Ultra Compacto em Uma Linha */}
-        <div className="flex items-center justify-between gap-4">
+        {/* =================== MOBILE LAYOUT =================== */}
+        <div className="md:hidden space-y-3">
           
-          {/* Info da Música + Controles */}
+          {/* Header Mobile */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-lg">
+                <span className="text-sm">🎵</span>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-theme-primary">
+                  Música Ambiente
+                </h3>
+                <p className="text-xs text-theme-secondary">
+                  {currentTrack ? 'Tocando agora' : 'Selecione uma rádio'}
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => setAtmosphereOpen(false)}
+              className="p-2 hover:bg-theme-hover rounded-lg transition-colors"
+            >
+              <span className="text-theme-secondary text-sm">✕</span>
+            </button>
+          </div>
+
+          {/* Track atual mobile */}
+          {currentTrack && (
+            <div className="bg-theme-panel/50 rounded-lg p-3 border border-theme-soft/50">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-theme-primary truncate">
+                    {currentTrack.name}
+                  </div>
+                  <div className="text-xs text-theme-secondary truncate">
+                    {currentTrack.artist}
+                  </div>
+                </div>
+                
+                {/* Status Visual Mobile */}
+                {isPlaying && (
+                  <div className="flex items-center gap-0.5">
+                    <div className="w-0.5 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div className="w-0.5 h-3 bg-green-400 rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-0.5 h-2 bg-green-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Controles Mobile */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePlayPause}
+                    disabled={loading}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-sm disabled:opacity-50 ${
+                      isPlaying 
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700' 
+                        : 'bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600'
+                    } text-white`}
+                  >
+                    {loading ? (
+                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : isPlaying ? (
+                      <div className="flex gap-0.5">
+                        <div className="w-0.5 h-3 bg-white rounded-full"></div>
+                        <div className="w-0.5 h-3 bg-white rounded-full"></div>
+                      </div>
+                    ) : (
+                      <div className="w-0 h-0 border-l-[5px] border-l-white border-y-[3px] border-y-transparent ml-0.5"></div>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={handleStop}
+                    className="w-6 h-6 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white rounded-full flex items-center justify-center transition-all"
+                  >
+                    <div className="w-2 h-2 bg-white rounded-sm"></div>
+                  </button>
+                </div>
+
+                {/* Volume Mobile */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-theme-secondary">🔊</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={volume}
+                    onChange={(e) => setVolume(parseInt(e.target.value))}
+                    className="w-16 h-1 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${volume}%, #e5e7eb ${volume}%, #e5e7eb 100%)`
+                    }}
+                  />
+                  <span className="text-xs text-theme-secondary w-8 text-center">{volume}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Seletor de Rádios Mobile */}
+          <div>
+            <div className="text-xs font-medium text-theme-primary mb-2">Estações de Rádio:</div>
+            <div className="grid grid-cols-2 gap-2">
+              {availableTracks.map((track) => (
+                <button
+                  key={track.id}
+                  className={`p-2 rounded-lg text-xs font-medium transition-all text-left ${
+                    currentTrack?.id === track.id
+                      ? 'bg-gradient-to-r from-purple-600 to-cyan-500 text-white shadow-sm'
+                      : 'bg-white/50 dark:bg-gray-800/50 text-theme-primary border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-600'
+                  }`}
+                  onClick={() => handleTrackSelect(track)}
+                >
+                  <div className="truncate">{track.name}</div>
+                  <div className="text-xs opacity-75 truncate mt-0.5">
+                    {track.artist.split(' - ')[0]}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* =================== DESKTOP LAYOUT =================== */}
+        <div className="hidden md:flex items-center gap-4">
+          
+          {/* Info da Música + Controles Desktop */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
             
-            {/* Controles Elegantes com Identidade Visual */}
+            {/* Controles Elegantes */}
             <div className="flex items-center gap-2">
               <button
                 onClick={handlePlayPause}
@@ -208,7 +334,7 @@ export default function AtmospherePanel({
               )}
             </div>
 
-            {/* Info da Música Compacta */}
+            {/* Info da Música Desktop */}
             {currentTrack ? (
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-theme-primary truncate">{currentTrack.name}</div>
@@ -220,7 +346,7 @@ export default function AtmospherePanel({
               </div>
             )}
 
-            {/* Status Visual Minimalista */}
+            {/* Status Visual Desktop */}
             {isPlaying && (
               <div className="flex items-center gap-0.5">
                 <div className="w-0.5 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -230,7 +356,7 @@ export default function AtmospherePanel({
             )}
           </div>
 
-          {/* Seletor de Rádios Inline */}
+          {/* Seletor de Rádios Desktop */}
           <div className="flex items-center gap-2">
             {availableTracks.map((track) => (
               <button
@@ -248,10 +374,10 @@ export default function AtmospherePanel({
             ))}
           </div>
 
-          {/* Volume + Close */}
+          {/* Volume + Close Desktop */}
           <div className="flex items-center gap-3">
             
-            {/* Volume Compacto */}
+            {/* Volume Desktop */}
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-theme-secondary">🔊</span>
               <input
